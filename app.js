@@ -631,10 +631,6 @@ function partLabel(partId) {
   return PARTS[partId]?.name?.ja || partId;
 }
 
-function partEnglishLabel(partId) {
-  return PARTS[partId]?.name?.en || partId;
-}
-
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, character => ({
     "&": "&amp;",
@@ -878,6 +874,63 @@ function connectAllPossible() {
     scheduleLayoutSave();
     render();
   }
+}
+
+function alignConnectedRails() {
+  const root = railById(state.selectedRailId);
+  if (!root) return;
+
+  const historyBefore = layoutSnapshot();
+  const fixedRailIds = new Set([root.id]);
+  const pendingFrames = [{
+    railId: root.id,
+    connections: layout.connections.filter(connection =>
+      connection.from.railId === root.id || connection.to.railId === root.id
+    ),
+    index: 0
+  }];
+
+  while (pendingFrames.length) {
+    const frame = pendingFrames.at(-1);
+    if (frame.index >= frame.connections.length) {
+      pendingFrames.pop();
+      continue;
+    }
+
+    const connection = frame.connections[frame.index++];
+    const currentRailId = frame.railId;
+    const currentRail = railById(currentRailId);
+    if (!currentRail) continue;
+
+    const currentRef = connection.from.railId === currentRailId
+      ? connection.from
+      : connection.to;
+    const neighborRef = connection.from.railId === currentRailId
+      ? connection.to
+      : connection.from;
+    const neighborRail = railById(neighborRef.railId);
+    if (!neighborRail || fixedRailIds.has(neighborRail.id)) continue;
+
+    snapRailToConnector(
+      currentRail,
+      currentRef.connector,
+      neighborRail,
+      neighborRef.connector
+    );
+    fixedRailIds.add(neighborRail.id);
+    pendingFrames.push({
+      railId: neighborRail.id,
+      connections: layout.connections.filter(item =>
+        item.from.railId === neighborRail.id || item.to.railId === neighborRail.id
+      ),
+      index: 0
+    });
+  }
+
+  if (JSON.stringify(historyBefore) === JSON.stringify(layoutSnapshot())) return;
+  pushHistoryIfChanged(historyBefore);
+  scheduleLayoutSave();
+  render();
 }
 
 function findBestNearbyConnection(movingRailIds, predicate) {
@@ -1871,12 +1924,11 @@ function renderInspector() {
     inspector.innerHTML = `<div class="no-selection">Select a rail to view<br />its properties</div>`;
     return;
   }
-  const connections = layout.connections.filter(connection => connection.from.railId === rail.id || connection.to.railId === rail.id).length;
   const part = PARTS[rail.part];
   const definitions = switchDefinitions(rail.part);
   const switchControls = definitions.length && state.selectedRailIds.length === 1
     ? `<div class="switch-state-control">
-        <label>Point State</label>
+        <label>State</label>
         ${definitions.map((definition, index) => {
           const currentSwitchState = switchStateForRail(rail, definition.id);
           return `<div class="switch-point-control">
@@ -1913,15 +1965,17 @@ function renderInspector() {
       </div>`
     : "";
   inspector.innerHTML = `
-    <div class="property-title"><div class="property-name"><strong>${partEnglishLabel(rail.part)}</strong><small>${rail.id}</small></div></div>
-    <div class="property-grid">
-      <div class="property"><label>X Position</label><output>${snapPosition(rail.position[0])}</output></div>
-      <div class="property"><label>Y Position</label><output>${snapPosition(rail.position[1])}</output></div>
-      <div class="property"><label>Rotation</label><output>${rail.rotation}°</output></div>
-      <div class="property"><label>Height (Z)</label><output>${rail.position[2]}</output></div>
+    <div class="property-title"><div class="property-name"><strong>${partLabel(rail.part)}</strong><small>id: ${rail.id}</small></div></div>
+    <div class="position-property">
+      <label>Position</label>
+      <output class="position-values">
+        <span>X ${snapPosition(rail.position[0])}</span>
+        <span>Y ${snapPosition(rail.position[1])}</span>
+        <span>Z ${rail.position[2]}</span>
+      </output>
     </div>
+    <div class="inspector-row"><span>Rotation(deg):</span><output>${rail.rotation}</output></div>
     <div class="flip-state">Flip: <strong>${rail.flip ? "ON" : "OFF"}</strong></div>
-    <div class="connection-state"><span>Connections</span><strong>${connections}</strong></div>
     ${switchControls}
     ${trainColorControl}
     ${textControl}`;
@@ -2492,6 +2546,10 @@ document.addEventListener("click", event => {
   if (action === "connect-nearest") {
     setSelectionMenuOpen(false);
     connectAllPossible();
+  }
+  if (action === "align-connected-rails") {
+    setSelectionMenuOpen(false);
+    alignConnectedRails();
   }
   if (action === "zoom-in") setZoom(viewState.zoom * 1.25);
   if (action === "zoom-out") setZoom(viewState.zoom / 1.25);
