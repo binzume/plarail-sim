@@ -90,7 +90,7 @@ window.PARTS = {
     schemaVersion: 1,
     type: "rail",
     id: "curve",
-    name: { ja: "45°カーブ", en: "45° Curve" },
+    name: { ja: "カーブ", en: "Curve" },
     flippable: true,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "male" },
@@ -102,7 +102,7 @@ window.PARTS = {
     schemaVersion: 1,
     type: "rail",
     id: "curve-wide",
-    name: { ja: "45°カーブR13", en: "45° Curve R13" },
+    name: { ja: "複線カーブ", en: "Double-track Curve" },
     flippable: true,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "male" },
@@ -267,37 +267,11 @@ window.PARTS = {
       default: "straight"
     }]
   },
-  "text": {
-    schemaVersion: 1,
-    type: "text",
-    id: "text",
-    name: { ja: "コメント", en: "Comment" },
-    color: "#4c5b73",
-    fontSize: 1.2,
-    flippable: false,
-    connectors: []
-  },
-  "train": {
-    schemaVersion: 1,
-    type: "train",
-    id: "train",
-    name: { ja: "列車", en: "Train" },
-    color: "#e76f51",
-    colors: [
-      { id: "red", color: "#e76f51", name: { ja: "赤", en: "Red" } },
-      { id: "orange", color: "#f4a261", name: { ja: "オレンジ", en: "Orange" } },
-      { id: "blue", color: "#3f6fba", name: { ja: "青", en: "Blue" } },
-      { id: "light-green", color: "#90be6d", name: { ja: "ライトグリーン", en: "Light Green" } }
-    ],
-    size: [TRAIN_WIDTH, TRAIN_HEIGHT],
-    flippable: true,
-    connectors: []
-  },
   "u-turn": {
     schemaVersion: 1,
     type: "rail",
     id: "u-turn",
-    name: { ja: "Uターンレール", en: "U-turn" },
+    name: { ja: "Uターン", en: "U-turn" },
     flippable: true,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "female" },
@@ -331,5 +305,33 @@ window.PARTS = {
         }
       ]
     }]
+  },
+  "text": {
+    schemaVersion: 1,
+    type: "text",
+    id: "text",
+    name: { ja: "コメント", en: "Comment" },
+    color: "#4c5b73",
+    fontSize: 1.2,
+    flippable: false,
+    connectors: []
+  },
+  "train": {
+    schemaVersion: 1,
+    type: "train",
+    id: "train",
+    name: { ja: "列車", en: "Train" },
+    color: "#d42e51",
+    colors: [
+      { id: "red", color: "#d42e51", name: { ja: "赤", en: "Red" } },
+      { id: "orange", color: "#f4a261", name: { ja: "オレンジ", en: "Orange" } },
+      { id: "blue", color: "#3f6fba", name: { ja: "青", en: "Blue" } },
+      { id: "light-green", color: "#269c86", name: { ja: "ライトグリーン", en: "Light Green" } },
+      { id: "yellow", color: "#ecda04", name: { ja: "黄色", en: "Yellow" } },
+      { id: "white", color: "#ffffff", name: { ja: "白", en: "White" } }
+    ],
+    size: [TRAIN_WIDTH, TRAIN_HEIGHT],
+    flippable: true,
+    connectors: []
   }
 };

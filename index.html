@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>プラレール レイアウトエディタ</title>
+    <title>プラレールシミュレータ</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="app-header">
       <div>
-        <h1>レイアウトエディタ</h1>
+        <h1>プラレールシミュレータ</h1>
       </div>
       <div class="header-actions">
         <button class="button button-ghost" data-action="toggle-play" title="再生" aria-label="シミュレーションを再生">▶</button>
@@ -18,9 +18,9 @@
           <div class="selection-menu-popup load-menu-popup" id="load-menu-popup" hidden>
             <button class="selection-menu-item" data-action="load-empty">空レイアウト</button>
             <button class="selection-menu-item" data-action="load-file">ファイルから読み込む</button>
+            <button class="selection-menu-item" data-action="export">ファイルに保存</button>
             <div class="load-menu-divider" id="load-menu-divider" hidden></div>
             <div class="sample-list" id="sample-list"></div>
-            <button class="selection-menu-item" data-action="export">JSONでダウンロード</button>
           </div>
         </div>
         <button class="button button-ghost" data-action="save" title="自動保存" aria-label="自動保存"><span class="save-status-dot" id="save-status-dot" aria-hidden="true"></span>自動保存</button>

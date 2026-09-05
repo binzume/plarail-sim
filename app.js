@@ -33,7 +33,9 @@ function storedSwitchMode(rail) {
 
 function trainColorForRail(rail) {
   const part = PARTS[rail.part];
-  return part?.colors?.find(option => option.color === rail.color)?.color || part?.color;
+  return typeof rail?.color === "string" && rail.color.length > 0
+    ? rail.color
+    : part?.color;
 }
 
 function textMetrics(value, part) {
@@ -1237,6 +1239,7 @@ function renderPartButtons() {
     icon.dataset.partIcon = part.id;
 
     const label = document.createElement("span");
+    label.className = "part-label";
     const name = document.createElement("strong");
     name.textContent = partLabel(part.id);
     label.appendChild(name);
@@ -1270,12 +1273,9 @@ function renderPartIcons() {
     });
     if (part.type === "train") {
       const [width, height] = part.size;
-      icon.appendChild(createSvg("rect", {
+      icon.appendChild(createSvg("path", {
         class: "part-icon-train",
-        x: -width / 2,
-        y: -height / 2,
-        width,
-        height,
+        d: trainBodyPath(width, height),
         fill: part.color
       }));
     }
@@ -1635,6 +1635,23 @@ function renderText(rail) {
   railLayer.appendChild(group);
 }
 
+function trainBodyPath(width, height) {
+  const left = -width / 2;
+  const right = width / 2;
+  const top = -height / 2;
+  const bottom = height / 2;
+  const frontRadius = Math.min(height * 0.46, width * 0.22);
+  return [
+    `M ${left} ${top}`,
+    `H ${right - frontRadius}`,
+    `Q ${right} ${top} ${right} ${top + frontRadius}`,
+    `V ${bottom - frontRadius}`,
+    `Q ${right} ${bottom} ${right - frontRadius} ${bottom}`,
+    `H ${left}`,
+    "Z"
+  ].join(" ");
+}
+
 function renderTrain(rail) {
   const part = PARTS[rail.part];
   const [width, height] = part.size;
@@ -1644,12 +1661,9 @@ function renderTrain(rail) {
     "data-rail-id": rail.id,
     transform: `translate(${displayed.position[0]} ${displayed.position[1] - displayed.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${displayed.rotation}) scale(${displayed.flip ? -1 : 1} 1)`
   });
-  group.appendChild(createSvg("rect", {
+  group.appendChild(createSvg("path", {
     class: "train-body",
-    x: -width / 2,
-    y: -height / 2,
-    width,
-    height,
+    d: trainBodyPath(width, height),
     fill: trainColorForRail(rail)
   }));
   group.appendChild(createSvg("rect", {
