@@ -13,6 +13,7 @@
       </div>
       <div class="header-actions">
         <button class="button button-ghost" data-action="toggle-play" title="再生" aria-label="シミュレーションを再生">▶</button>
+        <button class="button button-ghost" data-action="toggle-shortcuts" title="操作方法" aria-label="操作方法を表示">?</button>
         <div class="load-menu" id="load-menu">
           <button class="button button-ghost" data-action="toggle-load-menu" aria-haspopup="true" aria-expanded="false">レイアウト</button>
           <div class="selection-menu-popup load-menu-popup" id="load-menu-popup" hidden>
@@ -106,10 +107,37 @@
           <div id="inspector-content" class="inspector-content">
             <div class="no-selection">Select a rail to view<br />its properties</div>
           </div>
-          <p class="help-text">左のパーツをキャンバスへドラッグして追加できます。<br />レールをドラッグして配置。角度は45°単位です。<br />未接続コネクタからドラッグするとレールを自動配置できます。<br />Shift+クリックで接続レールをまとめて選択。Shift+ドラッグで範囲選択。<br />Ctrl/Cmd+クリックでレールを複数選択。<br />Ctrl/Cmd+C でコピー、Ctrl/Cmd+V で貼り付け。<br />「プラレール」は、株式会社タカラトミーの登録商標です。</p>
+          <p class="help-text">左のパーツをキャンバスへドラッグして追加できます。</p>
         </section>
       </aside>
     </main>
+
+    <div class="shortcut-overlay" id="shortcut-overlay" hidden>
+      <section class="shortcut-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcut-dialog-title">
+        <div class="shortcut-dialog-header">
+          <h2 id="shortcut-dialog-title">操作方法</h2>
+          <button class="shortcut-close" data-action="close-shortcuts" aria-label="閉じる" title="閉じる">×</button>
+        </div>
+        <dl class="shortcut-list">
+          <dt><kbd>Shift</kbd> + <kbd>?</kbd></dt><dd>この一覧を表示・閉じる</dd>
+          <dt><kbd>Delete</kbd> / <kbd>Backspace</kbd></dt><dd>選択したパーツを削除</dd>
+          <dt><kbd>R</kbd></dt><dd>右に45°回転</dd>
+          <dt><kbd>Shift</kbd> + <kbd>R</kbd></dt><dd>左に45°回転</dd>
+          <dt><kbd>F</kbd></dt><dd>パーツを反転</dd>
+          <dt><kbd>Shift</kbd> + <kbd>P</kbd></dt><dd>シミュレーションを再生・停止</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></dt><dd>元に戻す</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd></dt><dd>やり直す</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>C</kbd></dt><dd>選択したパーツをコピー</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>V</kbd></dt><dd>パーツを貼り付け</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + コネクタドラッグ</dt><dd>レールを追加せず直接接続</dd>
+          <dt><kbd>Shift</kbd> + クリック</dt><dd>接続レールをまとめて選択</dd>
+          <dt><kbd>Shift</kbd> + ドラッグ</dt><dd>範囲選択</dd>
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + クリック</dt><dd>複数選択</dd>
+          <dt><kbd>Escape</kbd></dt><dd>操作をキャンセル</dd>
+        </dl>
+        <p class="shortcut-note">未接続コネクタからドラッグするとレールを自動配置できます。<br />※「プラレール」は、株式会社タカラトミーの登録商標です。</p>
+      </section>
+    </div>
 
     <script src="parts.js"></script>
     <script src="samples.js"></script>

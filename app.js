@@ -94,6 +94,8 @@ const playButton = document.querySelector("[data-action='toggle-play']");
 const simulationPanel = document.querySelector("#simulation-panel");
 const simulationTimeValue = document.querySelector("#simulation-time-value");
 const simulationSpeedSelect = document.querySelector("#simulation-speed-select");
+const shortcutOverlay = document.querySelector("#shortcut-overlay");
+const shortcutCloseButton = shortcutOverlay.querySelector("[data-action='close-shortcuts']");
 let simulationFrame = null;
 let lastRenderedSimulationRevision = null;
 
@@ -148,6 +150,14 @@ function stopSimulation() {
   });
   simulationFrame = null;
   render();
+}
+
+function toggleSimulation() {
+  if (simulator.isPlaying()) stopSimulation();
+  else {
+    flushLayoutSave();
+    simulator.start();
+  }
 }
 
 function openLayoutDatabase() {
@@ -935,10 +945,14 @@ function autoConnectDraggedRail(movingRail, pointerPoint) {
 function applyGroupDragPosition(point) {
   const deltaX = point.x - state.drag.startPoint.x;
   const deltaY = point.y - state.drag.startPoint.y;
+  const primary = state.drag.initialPositions.find(initial => initial.id === state.drag.railId) ||
+    state.drag.initialPositions[0];
+  const snappedDeltaX = snapPosition(primary.position[0] + deltaX) - primary.position[0];
+  const snappedDeltaY = snapPosition(primary.position[1] + deltaY) - primary.position[1];
   state.drag.initialPositions.forEach(initial => {
     const selectedRail = railById(initial.id);
-    selectedRail.position[0] = snapPosition(initial.position[0] + deltaX);
-    selectedRail.position[1] = snapPosition(initial.position[1] + deltaY);
+    selectedRail.position[0] = roundCoordinate(initial.position[0] + snappedDeltaX);
+    selectedRail.position[1] = roundCoordinate(initial.position[1] + snappedDeltaY);
     selectedRail.rotation = initial.rotation;
   });
 }
@@ -1449,7 +1463,33 @@ function findRouteTarget(point, startRef) {
 
 function renderRoutePreview() {
   routePreviewLayer.replaceChildren();
-  const route = state.routeDrag?.preview;
+  const routeDrag = state.routeDrag;
+  if (!routeDrag) return;
+  if (routeDrag.directConnect) {
+    const startRail = railById(routeDrag.startRef.railId);
+    if (!startRail || !routeDrag.pointerPoint) return;
+    const start = projectWorldPoint(worldConnector(startRail, routeDrag.startRef.connector));
+    const end = routeDrag.targetRef
+      ? projectWorldPoint(worldConnector(railById(routeDrag.targetRef.railId), routeDrag.targetRef.connector))
+      : routeDrag.pointerPoint;
+    routePreviewLayer.appendChild(createSvg("line", {
+      class: "direct-connection-preview",
+      x1: start.x,
+      y1: start.y,
+      x2: end.x,
+      y2: end.y
+    }));
+    if (routeDrag.targetRef) {
+      routePreviewLayer.appendChild(createSvg("circle", {
+        class: "route-preview-target",
+        cx: end.x,
+        cy: end.y,
+        r: .55
+      }));
+    }
+    return;
+  }
+  const route = routeDrag.preview;
   if (!route) return;
   route.rails.forEach(rail => {
     const group = createSvg("g", {
@@ -1484,11 +1524,26 @@ function beginRouteDrag(event, railId, connectorIndex) {
   state.routeDrag = {
     startRef: { railId, connector: connectorIndex },
     startPoint: { x: point.x, y: point.y },
+    pointerPoint: { x: point.x, y: point.y },
     moved: false,
     targetRef: null,
-    preview: null
+    preview: null,
+    directConnect: event.ctrlKey || event.metaKey
   };
   event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function commitDirectConnection(routeDrag) {
+  if (!routeDrag.targetRef) return false;
+  const historyBefore = layoutSnapshot();
+  layout.connections.push({
+    from: { ...routeDrag.startRef },
+    to: { ...routeDrag.targetRef }
+  });
+  pushHistoryIfChanged(historyBefore);
+  scheduleLayoutSave();
+  render();
+  return true;
 }
 
 function commitRoute(routeDrag) {
@@ -1515,8 +1570,6 @@ function commitRoute(routeDrag) {
   if (routeDrag.targetRef) {
     layout.connections.push({ from: remap(route.endpointRef), to: { ...routeDrag.targetRef } });
   }
-  state.selectedRailId = addedRails.at(-1).id;
-  state.selectedRailIds = addedRails.map(rail => rail.id);
   pushHistoryIfChanged(historyBefore);
   scheduleLayoutSave();
   render();
@@ -1884,6 +1937,15 @@ function setLoadMenuOpen(open) {
   loadMenuButton.setAttribute("aria-expanded", String(open));
 }
 
+function setShortcutOverlayOpen(open) {
+  shortcutOverlay.hidden = !open;
+  if (open) {
+    setSelectionMenuOpen(false);
+    setLoadMenuOpen(false);
+    shortcutCloseButton.focus();
+  }
+}
+
 function renderSampleButtons() {
   if (!sampleList || !loadMenuDivider) return;
   sampleList.replaceChildren();
@@ -2091,9 +2153,12 @@ function beginDrag(event, railId) {
   const point = svgPoint(event);
   const dragPoint = logicalPointAtHeight(point, rail.position[2]);
   state.justDragged = false;
-  state.selectedRailId = railId;
-  if (event.shiftKey) state.selectedRailIds = connectedRailIds(railId);
-  else if (!state.selectedRailIds.includes(railId)) state.selectedRailIds = [railId];
+  const multiSelect = event.ctrlKey || event.metaKey;
+  if (!multiSelect) {
+    state.selectedRailId = railId;
+    if (event.shiftKey) state.selectedRailIds = connectedRailIds(railId);
+    else if (!state.selectedRailIds.includes(railId)) state.selectedRailIds = [railId];
+  }
   if (simulator.isPlaying()) renderInspector();
   const selectedRailIds = [...state.selectedRailIds];
   state.drag = {
@@ -2166,7 +2231,14 @@ document.addEventListener("pointermove", event => {
     if (distance < ROUTE_DRAG_THRESHOLD && !routeDrag.moved) return;
 
     routeDrag.moved = true;
+    routeDrag.pointerPoint = { x: displayPoint.x, y: displayPoint.y };
+    routeDrag.directConnect = event.ctrlKey || event.metaKey;
     routeDrag.targetRef = findRouteTarget(displayPoint, routeDrag.startRef);
+    if (routeDrag.directConnect) {
+      routeDrag.preview = null;
+      renderRoutePreview();
+      return;
+    }
     const startRail = railById(routeDrag.startRef.railId);
     const startConnector = worldConnector(startRail, routeDrag.startRef.connector);
     const point = logicalPointAtHeight(displayPoint, startConnector.z);
@@ -2267,7 +2339,7 @@ document.addEventListener("pointermove", event => {
   render();
 });
 
-document.addEventListener("pointerup", () => {
+document.addEventListener("pointerup", event => {
   if (state.paletteDrag) {
     const paletteDrag = state.paletteDrag;
     state.paletteDrag = null;
@@ -2297,7 +2369,10 @@ document.addEventListener("pointerup", () => {
 
   if (state.routeDrag) {
     const routeDrag = state.routeDrag;
-    const committed = routeDrag.moved && commitRoute(routeDrag);
+    routeDrag.directConnect = event.ctrlKey || event.metaKey;
+    const committed = routeDrag.moved && (
+      routeDrag.directConnect ? commitDirectConnection(routeDrag) : commitRoute(routeDrag)
+    );
     routePreviewLayer.replaceChildren();
     state.routeDrag = null;
     state.justRouteDragged = Boolean(routeDrag.moved);
@@ -2383,9 +2458,21 @@ canvas.addEventListener("click", event => {
 document.addEventListener("click", event => {
   if (!event.target.closest?.("#selection-menu")) setSelectionMenuOpen(false);
   if (!event.target.closest?.("#load-menu")) setLoadMenuOpen(false);
+  if (event.target === shortcutOverlay) {
+    setShortcutOverlayOpen(false);
+    return;
+  }
   const button = event.target.closest("button[data-action]");
   if (!button) return;
   const action = button.dataset.action;
+  if (action === "toggle-shortcuts") {
+    setShortcutOverlayOpen(shortcutOverlay.hidden);
+    return;
+  }
+  if (action === "close-shortcuts") {
+    setShortcutOverlayOpen(false);
+    return;
+  }
   if (action === "add") {
     if (state.justPaletteDragged) {
       state.justPaletteDragged = false;
@@ -2418,11 +2505,7 @@ document.addEventListener("click", event => {
   }
   if (action === "save") flushLayoutSave();
   if (action === "toggle-play") {
-    if (simulator.isPlaying()) stopSimulation();
-    else {
-      flushLayoutSave();
-      simulator.start();
-    }
+    toggleSimulation();
   }
   if (action === "toggle-load-menu") {
     setLoadMenuOpen(loadMenuPopup.hidden);
@@ -2489,8 +2572,25 @@ layoutFileInput.addEventListener("change", event => {
 
 document.addEventListener("keydown", event => {
   if (event.target.matches("textarea, input")) return;
+  if (event.shiftKey && (event.key === "?" || event.key === "/")) {
+    event.preventDefault();
+    setShortcutOverlayOpen(shortcutOverlay.hidden);
+    return;
+  }
+  if (!shortcutOverlay.hidden) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setShortcutOverlayOpen(false);
+    }
+    return;
+  }
   const modifier = event.ctrlKey || event.metaKey;
   const key = event.key.toLowerCase();
+  if (event.shiftKey && key === "p" && !modifier && !event.altKey) {
+    event.preventDefault();
+    toggleSimulation();
+    return;
+  }
   if (modifier && key === "z") {
     event.preventDefault();
     if (event.shiftKey) redoLayout();
