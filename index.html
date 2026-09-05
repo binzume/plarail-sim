@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>プラレール レイアウトエディタ</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>レイアウトエディタ</h1>
+      </div>
+      <div class="header-actions">
+        <button class="button button-ghost" data-action="toggle-play" title="再生" aria-label="シミュレーションを再生">▶</button>
+        <div class="load-menu" id="load-menu">
+          <button class="button button-ghost" data-action="toggle-load-menu" aria-haspopup="true" aria-expanded="false">レイアウト</button>
+          <div class="selection-menu-popup load-menu-popup" id="load-menu-popup" hidden>
+            <button class="selection-menu-item" data-action="load-empty">空レイアウト</button>
+            <button class="selection-menu-item" data-action="load-file">ファイルから読み込む</button>
+            <div class="load-menu-divider" id="load-menu-divider" hidden></div>
+            <div class="sample-list" id="sample-list"></div>
+            <button class="selection-menu-item" data-action="export">JSONでダウンロード</button>
+          </div>
+        </div>
+        <button class="button button-ghost" data-action="save" title="自動保存" aria-label="自動保存"><span class="save-status-dot" id="save-status-dot" aria-hidden="true"></span>自動保存</button>
+        <input id="layout-file-input" type="file" accept=".json,application/json" hidden />
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <aside class="sidebar left-panel">
+        <section class="panel-section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">PARTS</p>
+            </div>
+            <span class="part-count" id="rail-count">0</span>
+          </div>
+          <div class="add-buttons" id="part-list"></div>
+        </section>
+
+      </aside>
+
+      <section class="workspace">
+        <div class="canvas-wrap">
+          <div class="selection-controls" id="selection-controls" aria-label="選択レールの操作" aria-hidden="true">
+            <button class="tool-button" data-action="rotate-left" title="左に45°回転">↶</button>
+            <button class="tool-button" data-action="rotate-right" title="右に45°回転">↷</button>
+            <button class="tool-button" data-action="flip" title="左右反転">⇆</button>
+            <button class="tool-button danger" data-action="delete" title="削除">⌫</button>
+            <div class="selection-menu" id="selection-menu">
+              <button class="tool-button menu-button" data-action="toggle-selection-menu" aria-haspopup="true" aria-expanded="false" title="その他">⋮</button>
+              <div class="selection-menu-popup" id="selection-menu-popup" hidden>
+                <button class="selection-menu-item" data-action="connect-nearest">近くのコネクタを接続</button>
+              </div>
+            </div>
+          </div>
+          <div class="zoom-controls" aria-label="ズーム操作">
+            <button class="zoom-button" data-action="zoom-out" title="縮小">−</button>
+            <button class="zoom-value" data-action="zoom-reset" id="zoom-value" title="初期倍率に戻す">100%</button>
+            <button class="zoom-button" data-action="zoom-in" title="拡大">＋</button>
+            <button class="zoom-button fit-button" data-action="fit-layout" title="全レールにフィット" aria-label="全レールにフィット">⛶</button>
+          </div>
+          <svg id="layout-canvas" viewBox="0 0 48 28" role="application" aria-label="レイアウト編集キャンバス">
+            <defs>
+              <pattern id="small-grid" width="1" height="1" patternUnits="userSpaceOnUse">
+                <path d="M 1 0 L 0 0 0 1" fill="none" stroke="#dfe5ed" stroke-width=".012" />
+              </pattern>
+              <pattern id="large-grid" width="5" height="5" patternUnits="userSpaceOnUse">
+                <rect width="5" height="5" fill="url(#small-grid)" />
+                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#cbd5e1" stroke-width=".018" />
+              </pattern>
+              <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#253858" flood-opacity=".16" />
+              </filter>
+            </defs>
+            <rect class="canvas-background" x="-100" y="-100" width="224" height="214" fill="url(#large-grid)" />
+            <g id="connection-layer"></g>
+            <g id="rail-layer"></g>
+            <g id="route-preview-layer"></g>
+            <g id="selection-layer"></g>
+          </svg>
+          <div class="empty-state" id="empty-state">
+            <div class="empty-mark">＋</div>
+            <strong>レールを追加してください</strong>
+            <span>左のボタンから直線またはカーブを選びます</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar right-panel">
+        <div class="simulation-panel" id="simulation-panel" hidden>
+          <div class="simulation-time"><span>TIME</span><strong id="simulation-time-value">00:00</strong></div>
+          <select class="simulation-speed-select" id="simulation-speed-select" data-action="set-speed" aria-label="再生速度">
+            <option value="1">1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+            <option value="8">8×</option>
+            <option value="16">16×</option>
+          </select>
+        </div>
+        <section class="panel-section inspector">
+          <p class="section-kicker">INSPECTOR</p>
+          <h2>Properties</h2>
+          <div id="inspector-content" class="inspector-content">
+            <div class="no-selection">Select a rail to view<br />its properties</div>
+          </div>
+          <p class="help-text">左のパーツをキャンバスへドラッグして追加できます。<br />レールをドラッグして配置。角度は45°単位です。<br />未接続コネクタからドラッグするとレールを自動配置できます。<br />Shift+クリックで接続レールをまとめて選択。Shift+ドラッグで範囲選択。<br />Ctrl/Cmd+クリックでレールを複数選択。<br />Ctrl/Cmd+C でコピー、Ctrl/Cmd+V で貼り付け。<br />「プラレール」は、株式会社タカラトミーの登録商標です。</p>
+        </section>
+      </aside>
+    </main>
+
+    <script src="parts.js"></script>
+    <script src="samples.js"></script>
+    <script src="simulator.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

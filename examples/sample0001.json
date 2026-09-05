@@ -1,0 +1,1218 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "title": "サンプル01",
+    "updatedAt": "2026-09-04T08:55:14.434Z"
+  },
+  "rails": [
+    {
+      "id": "rail-003",
+      "part": "straight",
+      "position": [
+        21,
+        44.5,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-012",
+      "part": "curve",
+      "position": [
+        11,
+        34.5,
+        0
+      ],
+      "rotation": 270,
+      "flip": true
+    },
+    {
+      "id": "rail-013",
+      "part": "curve",
+      "position": [
+        14,
+        27.5,
+        0
+      ],
+      "rotation": 315,
+      "flip": true
+    },
+    {
+      "id": "rail-015",
+      "part": "straight",
+      "position": [
+        31,
+        24.5,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-016",
+      "part": "curve",
+      "position": [
+        38,
+        27.5,
+        0
+      ],
+      "rotation": 45,
+      "flip": true
+    },
+    {
+      "id": "rail-017",
+      "part": "curve",
+      "position": [
+        41,
+        34.5,
+        0
+      ],
+      "rotation": 90,
+      "flip": true
+    },
+    {
+      "id": "rail-018",
+      "part": "curve",
+      "position": [
+        38,
+        41.5,
+        0
+      ],
+      "rotation": 135,
+      "flip": true
+    },
+    {
+      "id": "rail-004",
+      "part": "train",
+      "position": [
+        26,
+        24.5,
+        0
+      ],
+      "rotation": 180,
+      "flip": false,
+      "color": "#e76f51"
+    },
+    {
+      "id": "rail-021",
+      "part": "curve",
+      "position": [
+        21,
+        24.5,
+        0
+      ],
+      "rotation": 0,
+      "flip": true
+    },
+    {
+      "id": "rail-022",
+      "part": "u-turn",
+      "position": [
+        45.5,
+        21,
+        0
+      ],
+      "rotation": 270,
+      "flip": false
+    },
+    {
+      "id": "rail-032",
+      "part": "single-double-point-b",
+      "position": [
+        45.5,
+        31,
+        0
+      ],
+      "rotation": 270,
+      "flip": false,
+      "states": {
+        "point": "straight"
+      }
+    },
+    {
+      "id": "rail-048",
+      "part": "turnout-a",
+      "position": [
+        55.5,
+        41,
+        0
+      ],
+      "rotation": 180,
+      "flip": true,
+      "states": {
+        "point": "straight"
+      }
+    },
+    {
+      "id": "rail-049",
+      "part": "straight-quarter-mm",
+      "position": [
+        65.5,
+        41,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-050",
+      "part": "straight-quarter",
+      "position": [
+        70.5,
+        41,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-055",
+      "part": "train",
+      "position": [
+        71,
+        41,
+        0
+      ],
+      "rotation": 0,
+      "flip": false,
+      "color": "#90be6d"
+    },
+    {
+      "id": "rail-056",
+      "part": "curve",
+      "position": [
+        62.5,
+        38,
+        0
+      ],
+      "rotation": 135,
+      "flip": true
+    },
+    {
+      "id": "rail-057",
+      "part": "curve",
+      "position": [
+        65.5,
+        31,
+        0
+      ],
+      "rotation": 270,
+      "flip": false
+    },
+    {
+      "id": "rail-058",
+      "part": "curve",
+      "position": [
+        68.5,
+        24,
+        0
+      ],
+      "rotation": 315,
+      "flip": false
+    },
+    {
+      "id": "rail-059",
+      "part": "curve",
+      "position": [
+        75.5,
+        21,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-060",
+      "part": "curve",
+      "position": [
+        82.5,
+        24,
+        0
+      ],
+      "rotation": 45,
+      "flip": false
+    },
+    {
+      "id": "rail-061",
+      "part": "curve",
+      "position": [
+        85.5,
+        31,
+        0
+      ],
+      "rotation": 90,
+      "flip": false
+    },
+    {
+      "id": "rail-062",
+      "part": "curve",
+      "position": [
+        82.5,
+        38,
+        0
+      ],
+      "rotation": 135,
+      "flip": false
+    },
+    {
+      "id": "rail-063",
+      "part": "straight-half",
+      "position": [
+        75.5,
+        41,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-014",
+      "part": "curve",
+      "position": [
+        48.5,
+        38,
+        0
+      ],
+      "rotation": 225,
+      "flip": true
+    },
+    {
+      "id": "rail-019",
+      "part": "curve",
+      "position": [
+        45.5,
+        31,
+        0
+      ],
+      "rotation": 270,
+      "flip": true
+    },
+    {
+      "id": "rail-020",
+      "part": "curve",
+      "position": [
+        31,
+        44.5,
+        0
+      ],
+      "rotation": 180,
+      "flip": true
+    },
+    {
+      "id": "rail-023",
+      "part": "curve",
+      "position": [
+        14,
+        41.5,
+        0
+      ],
+      "rotation": 225,
+      "flip": true
+    },
+    {
+      "id": "rail-024",
+      "part": "straight",
+      "position": [
+        35,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-025",
+      "part": "straight",
+      "position": [
+        45,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-026",
+      "part": "straight",
+      "position": [
+        55,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-027",
+      "part": "straight",
+      "position": [
+        65,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-028",
+      "part": "straight",
+      "position": [
+        75,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-030",
+      "part": "curve",
+      "position": [
+        85,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-031",
+      "part": "curve",
+      "position": [
+        92,
+        4,
+        0
+      ],
+      "rotation": 45,
+      "flip": false
+    },
+    {
+      "id": "rail-033",
+      "part": "straight",
+      "position": [
+        95,
+        11,
+        0
+      ],
+      "rotation": 90,
+      "flip": false
+    },
+    {
+      "id": "rail-034",
+      "part": "straight",
+      "position": [
+        95,
+        21,
+        0
+      ],
+      "rotation": 90,
+      "flip": false
+    },
+    {
+      "id": "rail-035",
+      "part": "straight",
+      "position": [
+        95,
+        31,
+        0
+      ],
+      "rotation": 90,
+      "flip": false
+    },
+    {
+      "id": "rail-036",
+      "part": "straight",
+      "position": [
+        95,
+        41,
+        0
+      ],
+      "rotation": 90,
+      "flip": false
+    },
+    {
+      "id": "rail-037",
+      "part": "curve",
+      "position": [
+        95,
+        51,
+        0
+      ],
+      "rotation": 90,
+      "flip": false
+    },
+    {
+      "id": "rail-038",
+      "part": "curve",
+      "position": [
+        92,
+        58,
+        0
+      ],
+      "rotation": 135,
+      "flip": false
+    },
+    {
+      "id": "rail-040",
+      "part": "straight",
+      "position": [
+        85,
+        61,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-041",
+      "part": "straight",
+      "position": [
+        75,
+        61,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-042",
+      "part": "straight",
+      "position": [
+        65,
+        61,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-043",
+      "part": "straight",
+      "position": [
+        55,
+        61,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-044",
+      "part": "straight",
+      "position": [
+        45,
+        61,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-045",
+      "part": "straight",
+      "position": [
+        35,
+        61,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-046",
+      "part": "straight",
+      "position": [
+        25,
+        61,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-047",
+      "part": "curve",
+      "position": [
+        15,
+        61,
+        0
+      ],
+      "rotation": 180,
+      "flip": false
+    },
+    {
+      "id": "rail-051",
+      "part": "curve",
+      "position": [
+        7.929,
+        58.071,
+        0
+      ],
+      "rotation": 225,
+      "flip": false
+    },
+    {
+      "id": "rail-052",
+      "part": "straight",
+      "position": [
+        5,
+        51,
+        0
+      ],
+      "rotation": 270,
+      "flip": false
+    },
+    {
+      "id": "rail-053",
+      "part": "straight",
+      "position": [
+        5,
+        41,
+        0
+      ],
+      "rotation": 270,
+      "flip": false
+    },
+    {
+      "id": "rail-054",
+      "part": "straight",
+      "position": [
+        5,
+        31,
+        0
+      ],
+      "rotation": 270,
+      "flip": false
+    },
+    {
+      "id": "rail-064",
+      "part": "straight",
+      "position": [
+        5,
+        21,
+        0
+      ],
+      "rotation": 270,
+      "flip": false
+    },
+    {
+      "id": "rail-067",
+      "part": "curve",
+      "position": [
+        5,
+        11,
+        0
+      ],
+      "rotation": 270,
+      "flip": false
+    },
+    {
+      "id": "rail-068",
+      "part": "curve",
+      "position": [
+        7.929,
+        3.929,
+        0
+      ],
+      "rotation": 315,
+      "flip": false
+    },
+    {
+      "id": "rail-069",
+      "part": "straight",
+      "position": [
+        15,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-070",
+      "part": "straight",
+      "position": [
+        25,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false
+    },
+    {
+      "id": "rail-071",
+      "part": "train",
+      "position": [
+        20.5,
+        1,
+        0
+      ],
+      "rotation": 0,
+      "flip": false,
+      "color": "#3f6fba"
+    }
+  ],
+  "connections": [
+    {
+      "from": {
+        "railId": "rail-003",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-020",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-015",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-021",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-022",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-032",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-022",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-032",
+        "connector": 2
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-032",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-019",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-048",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-049",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-049",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-050",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-050",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-063",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-024",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-025",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-025",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-026",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-026",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-027",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-027",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-028",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-028",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-030",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-033",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-034",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-034",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-035",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-035",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-036",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-036",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-037",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-040",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-041",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-041",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-042",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-042",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-043",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-043",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-044",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-044",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-045",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-045",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-046",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-046",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-047",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-047",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-051",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-051",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-052",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-052",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-053",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-053",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-054",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-054",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-064",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-064",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-067",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-067",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-068",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-068",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-069",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-069",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-070",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-024",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-070",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-012",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-023",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-003",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-023",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-013",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-021",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-015",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-016",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-016",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-017",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-017",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-018",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-018",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-020",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-048",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-014",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-048",
+        "connector": 2
+      },
+      "to": {
+        "railId": "rail-056",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-056",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-057",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-057",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-058",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-058",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-059",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-059",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-060",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-060",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-061",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-061",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-062",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-062",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-063",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-014",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-019",
+        "connector": 1
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-030",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-031",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-031",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-033",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-037",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-038",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-038",
+        "connector": 1
+      },
+      "to": {
+        "railId": "rail-040",
+        "connector": 0
+      }
+    },
+    {
+      "from": {
+        "railId": "rail-012",
+        "connector": 0
+      },
+      "to": {
+        "railId": "rail-013",
+        "connector": 1
+      }
+    }
+  ]
+}
