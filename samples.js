@@ -2,16 +2,15 @@ window.SAMPLES = [
   {
     "schemaVersion": 1,
     "metadata": {
-      "title": "サンプル01",
-      "updatedAt": "2026-09-04T08:55:14.434Z"
+      "title": "サンプル01"
     },
     "rails": [
       {
         "id": "rail-003",
         "part": "straight",
         "position": [
-          21,
-          44.5,
+          20.929,
+          44.429,
           0
         ],
         "rotation": 0,
@@ -21,8 +20,8 @@ window.SAMPLES = [
         "id": "rail-012",
         "part": "curve",
         "position": [
-          11,
-          34.5,
+          10.929,
+          34.429,
           0
         ],
         "rotation": 270,
@@ -32,8 +31,8 @@ window.SAMPLES = [
         "id": "rail-013",
         "part": "curve",
         "position": [
-          14,
-          27.5,
+          13.858,
+          27.358,
           0
         ],
         "rotation": 315,
@@ -43,8 +42,8 @@ window.SAMPLES = [
         "id": "rail-015",
         "part": "straight",
         "position": [
-          31,
-          24.5,
+          30.929,
+          24.429,
           0
         ],
         "rotation": 180,
@@ -55,7 +54,7 @@ window.SAMPLES = [
         "part": "curve",
         "position": [
           38,
-          27.5,
+          27.358,
           0
         ],
         "rotation": 45,
@@ -65,8 +64,8 @@ window.SAMPLES = [
         "id": "rail-017",
         "part": "curve",
         "position": [
-          41,
-          34.5,
+          40.929,
+          34.429,
           0
         ],
         "rotation": 90,
@@ -93,14 +92,14 @@ window.SAMPLES = [
         ],
         "rotation": 180,
         "flip": false,
-        "color": "#e76f51"
+        "color": "#d42e51"
       },
       {
         "id": "rail-021",
         "part": "curve",
         "position": [
-          21,
-          24.5,
+          20.929,
+          24.429,
           0
         ],
         "rotation": 0,
@@ -110,7 +109,7 @@ window.SAMPLES = [
         "id": "rail-022",
         "part": "u-turn",
         "position": [
-          45.5,
+          49.5,
           21,
           0
         ],
@@ -121,7 +120,7 @@ window.SAMPLES = [
         "id": "rail-032",
         "part": "single-double-point-b",
         "position": [
-          45.5,
+          49.5,
           31,
           0
         ],
@@ -135,7 +134,7 @@ window.SAMPLES = [
         "id": "rail-048",
         "part": "turnout-a",
         "position": [
-          55.5,
+          59.5,
           41,
           0
         ],
@@ -149,7 +148,7 @@ window.SAMPLES = [
         "id": "rail-049",
         "part": "straight-quarter-mm",
         "position": [
-          65.5,
+          69.5,
           41,
           0
         ],
@@ -160,7 +159,7 @@ window.SAMPLES = [
         "id": "rail-050",
         "part": "straight-quarter",
         "position": [
-          70.5,
+          74.5,
           41,
           0
         ],
@@ -177,14 +176,14 @@ window.SAMPLES = [
         ],
         "rotation": 0,
         "flip": false,
-        "color": "#90be6d"
+        "color": "#269c86"
       },
       {
         "id": "rail-056",
         "part": "curve",
         "position": [
-          62.5,
-          38,
+          66.571,
+          38.071,
           0
         ],
         "rotation": 135,
@@ -194,7 +193,7 @@ window.SAMPLES = [
         "id": "rail-057",
         "part": "curve",
         "position": [
-          65.5,
+          69.5,
           31,
           0
         ],
@@ -205,8 +204,8 @@ window.SAMPLES = [
         "id": "rail-058",
         "part": "curve",
         "position": [
-          68.5,
-          24,
+          72.429,
+          23.929,
           0
         ],
         "rotation": 315,
@@ -216,7 +215,7 @@ window.SAMPLES = [
         "id": "rail-059",
         "part": "curve",
         "position": [
-          75.5,
+          79.5,
           21,
           0
         ],
@@ -227,8 +226,8 @@ window.SAMPLES = [
         "id": "rail-060",
         "part": "curve",
         "position": [
-          82.5,
-          24,
+          86.571,
+          23.929,
           0
         ],
         "rotation": 45,
@@ -238,7 +237,7 @@ window.SAMPLES = [
         "id": "rail-061",
         "part": "curve",
         "position": [
-          85.5,
+          89.5,
           31,
           0
         ],
@@ -249,8 +248,8 @@ window.SAMPLES = [
         "id": "rail-062",
         "part": "curve",
         "position": [
-          82.5,
-          38,
+          86.571,
+          38.071,
           0
         ],
         "rotation": 135,
@@ -260,7 +259,7 @@ window.SAMPLES = [
         "id": "rail-063",
         "part": "straight-half",
         "position": [
-          75.5,
+          79.5,
           41,
           0
         ],
@@ -271,8 +270,8 @@ window.SAMPLES = [
         "id": "rail-014",
         "part": "curve",
         "position": [
-          48.5,
-          38,
+          52.429,
+          38.071,
           0
         ],
         "rotation": 225,
@@ -282,7 +281,7 @@ window.SAMPLES = [
         "id": "rail-019",
         "part": "curve",
         "position": [
-          45.5,
+          49.5,
           31,
           0
         ],
@@ -293,8 +292,8 @@ window.SAMPLES = [
         "id": "rail-020",
         "part": "curve",
         "position": [
-          31,
-          44.5,
+          30.929,
+          44.429,
           0
         ],
         "rotation": 180,
@@ -304,7 +303,7 @@ window.SAMPLES = [
         "id": "rail-023",
         "part": "curve",
         "position": [
-          14,
+          13.858,
           41.5,
           0
         ],
@@ -381,8 +380,8 @@ window.SAMPLES = [
         "id": "rail-031",
         "part": "curve",
         "position": [
-          92,
-          4,
+          92.071,
+          3.929,
           0
         ],
         "rotation": 45,
@@ -447,8 +446,8 @@ window.SAMPLES = [
         "id": "rail-038",
         "part": "curve",
         "position": [
-          92,
-          58,
+          92.071,
+          58.071,
           0
         ],
         "rotation": 135,
@@ -651,7 +650,129 @@ window.SAMPLES = [
         ],
         "rotation": 0,
         "flip": false,
-        "color": "#3f6fba"
+        "color": "#ecda04"
+      },
+      {
+        "id": "rail-029",
+        "part": "curve-wide",
+        "position": [
+          31,
+          21.5,
+          0
+        ],
+        "rotation": 0,
+        "flip": false
+      },
+      {
+        "id": "rail-039",
+        "part": "curve-wide",
+        "position": [
+          40.192,
+          25.308,
+          0
+        ],
+        "rotation": 45,
+        "flip": false
+      },
+      {
+        "id": "rail-065",
+        "part": "curve-wide",
+        "position": [
+          44,
+          34.5,
+          0
+        ],
+        "rotation": 90,
+        "flip": false
+      },
+      {
+        "id": "rail-066",
+        "part": "curve-wide",
+        "position": [
+          40.192,
+          43.692,
+          0
+        ],
+        "rotation": 135,
+        "flip": false
+      },
+      {
+        "id": "rail-072",
+        "part": "curve-wide",
+        "position": [
+          21,
+          47.5,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-073",
+        "part": "curve-wide",
+        "position": [
+          11.808,
+          43.692,
+          0
+        ],
+        "rotation": 225,
+        "flip": false
+      },
+      {
+        "id": "rail-074",
+        "part": "curve-wide",
+        "position": [
+          8,
+          34.5,
+          0
+        ],
+        "rotation": 270,
+        "flip": false
+      },
+      {
+        "id": "rail-075",
+        "part": "curve-wide",
+        "position": [
+          11.808,
+          25.308,
+          0
+        ],
+        "rotation": 315,
+        "flip": false
+      },
+      {
+        "id": "rail-076",
+        "part": "straight",
+        "position": [
+          21,
+          21.5,
+          0
+        ],
+        "rotation": 0,
+        "flip": false
+      },
+      {
+        "id": "rail-077",
+        "part": "straight",
+        "position": [
+          31,
+          47.5,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-078",
+        "part": "train",
+        "position": [
+          26,
+          21.5,
+          0
+        ],
+        "rotation": 0,
+        "flip": false,
+        "color": "#ffffff"
       }
     ],
     "connections": [
@@ -1214,6 +1335,106 @@ window.SAMPLES = [
           "railId": "rail-013",
           "connector": 1
         }
+      },
+      {
+        "from": {
+          "railId": "rail-029",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-039",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-039",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-065",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-065",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-066",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-072",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-073",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-073",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-074",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-074",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-075",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-029",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-076",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-066",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-077",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-076",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-075",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-077",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-072",
+          "connector": 0
+        }
       }
     ]
   },
@@ -1227,8 +1448,8 @@ window.SAMPLES = [
         "id": "rail-039",
         "part": "single-double-point-a",
         "position": [
-          15.071,
-          1.429,
+          15,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -1241,8 +1462,8 @@ window.SAMPLES = [
         "id": "rail-040",
         "part": "single-double-point-a",
         "position": [
-          44.929,
-          44.571,
+          45,
+          44.5,
           0
         ],
         "rotation": 180,
@@ -1255,8 +1476,8 @@ window.SAMPLES = [
         "id": "rail-041",
         "part": "single-double-point-b",
         "position": [
-          114.929,
-          41.571,
+          115,
+          41.5,
           0
         ],
         "rotation": 0,
@@ -1269,8 +1490,8 @@ window.SAMPLES = [
         "id": "rail-062",
         "part": "straight",
         "position": [
-          84.929,
-          41.571,
+          85,
+          41.5,
           0
         ],
         "rotation": 0,
@@ -1291,8 +1512,8 @@ window.SAMPLES = [
         "id": "rail-066",
         "part": "straight",
         "position": [
-          74.929,
-          44.571,
+          75,
+          44.5,
           0
         ],
         "rotation": 0,
@@ -1302,8 +1523,8 @@ window.SAMPLES = [
         "id": "rail-067",
         "part": "straight",
         "position": [
-          94.929,
-          44.571,
+          95,
+          44.5,
           0
         ],
         "rotation": 0,
@@ -1313,8 +1534,8 @@ window.SAMPLES = [
         "id": "rail-073",
         "part": "turnout-b",
         "position": [
-          94.929,
-          44.571,
+          95,
+          44.5,
           0
         ],
         "rotation": 180,
@@ -1327,8 +1548,8 @@ window.SAMPLES = [
         "id": "rail-086",
         "part": "turnout-a",
         "position": [
-          54.929,
-          44.571,
+          55,
+          44.5,
           0
         ],
         "rotation": 0,
@@ -1342,8 +1563,8 @@ window.SAMPLES = [
         "id": "rail-088",
         "part": "turnout-a",
         "position": [
-          54.929,
-          41.571,
+          55,
+          41.5,
           0
         ],
         "rotation": 180,
@@ -1372,8 +1593,8 @@ window.SAMPLES = [
         "id": "rail-090",
         "part": "turnout-a",
         "position": [
-          25.071,
-          1.429,
+          25,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -1387,8 +1608,8 @@ window.SAMPLES = [
         "id": "rail-097",
         "part": "turnout-b",
         "position": [
-          84.929,
-          41.571,
+          85,
+          41.5,
           0
         ],
         "rotation": 180,
@@ -1401,30 +1622,19 @@ window.SAMPLES = [
         "id": "rail-132",
         "part": "curve",
         "position": [
-          74.929,
-          31.571,
+          75,
+          31.5,
           0
         ],
         "rotation": 270,
         "flip": true
       },
       {
-        "id": "rail-134",
-        "part": "curve",
-        "position": [
-          82.071,
-          4.429,
-          0
-        ],
-        "rotation": 45,
-        "flip": false
-      },
-      {
         "id": "rail-136",
         "part": "straight",
         "position": [
-          65.071,
-          1.429,
+          65,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -1434,8 +1644,8 @@ window.SAMPLES = [
         "id": "rail-137",
         "part": "straight",
         "position": [
-          55.071,
-          1.429,
+          55,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -1445,8 +1655,8 @@ window.SAMPLES = [
         "id": "rail-001",
         "part": "straight",
         "position": [
-          64.929,
-          41.571,
+          65,
+          41.5,
           0
         ],
         "rotation": 0,
@@ -1456,8 +1666,8 @@ window.SAMPLES = [
         "id": "rail-002",
         "part": "straight",
         "position": [
-          94.929,
-          41.571,
+          95,
+          41.5,
           0
         ],
         "rotation": 0,
@@ -1467,8 +1677,8 @@ window.SAMPLES = [
         "id": "rail-003",
         "part": "curve",
         "position": [
-          62,
-          47.5,
+          62.071,
+          47.429,
           0
         ],
         "rotation": 45,
@@ -1478,8 +1688,8 @@ window.SAMPLES = [
         "id": "rail-004",
         "part": "curve",
         "position": [
-          64.929,
-          54.571,
+          65,
+          54.5,
           0
         ],
         "rotation": 90,
@@ -1489,8 +1699,8 @@ window.SAMPLES = [
         "id": "rail-005",
         "part": "curve",
         "position": [
-          62,
-          61.642,
+          62.071,
+          61.571,
           0
         ],
         "rotation": 135,
@@ -1500,8 +1710,8 @@ window.SAMPLES = [
         "id": "rail-053",
         "part": "curve",
         "position": [
-          62,
-          38.5,
+          62.071,
+          38.571,
           0
         ],
         "rotation": 135,
@@ -1533,7 +1743,7 @@ window.SAMPLES = [
         "id": "rail-098",
         "part": "curve",
         "position": [
-          122.429,
+          122.071,
           38.571,
           0
         ],
@@ -1544,8 +1754,8 @@ window.SAMPLES = [
         "id": "rail-100",
         "part": "straight",
         "position": [
-          125.429,
-          31.071,
+          125,
+          31.5,
           0
         ],
         "rotation": 270,
@@ -1561,14 +1771,14 @@ window.SAMPLES = [
         ],
         "rotation": 180,
         "flip": false,
-        "color": "#f4a261"
+        "color": "#269c86"
       },
       {
         "id": "rail-126",
         "part": "turnout-b",
         "position": [
-          44.929,
-          44.571,
+          45,
+          44.5,
           0
         ],
         "rotation": 0,
@@ -1590,22 +1800,11 @@ window.SAMPLES = [
         "flip": true
       },
       {
-        "id": "rail-193",
-        "part": "curve",
-        "position": [
-          72.071,
-          7.429,
-          0
-        ],
-        "rotation": 45,
-        "flip": false
-      },
-      {
         "id": "rail-194",
         "part": "curve",
         "position": [
-          65.071,
-          4.429,
+          65,
+          4.5,
           0
         ],
         "rotation": 0,
@@ -1615,8 +1814,8 @@ window.SAMPLES = [
         "id": "rail-006",
         "part": "straight",
         "position": [
-          85.071,
-          11.429,
+          85,
+          12,
           0
         ],
         "rotation": 90,
@@ -1674,8 +1873,8 @@ window.SAMPLES = [
         "id": "rail-181",
         "part": "curve",
         "position": [
-          34.929,
-          54.571,
+          35,
+          54.5,
           0
         ],
         "rotation": 270,
@@ -1685,7 +1884,7 @@ window.SAMPLES = [
         "id": "rail-185",
         "part": "curve",
         "position": [
-          31.929,
+          32.071,
           61.571,
           0
         ],
@@ -1696,8 +1895,8 @@ window.SAMPLES = [
         "id": "rail-186",
         "part": "curve",
         "position": [
-          24.929,
-          64.571,
+          25,
+          64.5,
           0
         ],
         "rotation": 180,
@@ -1707,8 +1906,8 @@ window.SAMPLES = [
         "id": "rail-157",
         "part": "straight",
         "position": [
-          85.071,
-          21.429,
+          85,
+          22,
           0
         ],
         "rotation": 90,
@@ -1729,8 +1928,8 @@ window.SAMPLES = [
         "id": "rail-166",
         "part": "straight",
         "position": [
-          35.071,
-          1.429,
+          35,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -1740,8 +1939,8 @@ window.SAMPLES = [
         "id": "rail-167",
         "part": "straight",
         "position": [
-          45.071,
-          1.429,
+          45,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -1762,8 +1961,8 @@ window.SAMPLES = [
         "id": "rail-206",
         "part": "straight",
         "position": [
-          25.071,
-          4.429,
+          25,
+          4.5,
           0
         ],
         "rotation": 0,
@@ -1806,8 +2005,8 @@ window.SAMPLES = [
         "id": "rail-215",
         "part": "straight-half",
         "position": [
-          57.571,
-          4.429,
+          57.5,
+          4.5,
           0
         ],
         "rotation": 0,
@@ -1817,8 +2016,8 @@ window.SAMPLES = [
         "id": "rail-216",
         "part": "straight-quarter",
         "position": [
-          62.571,
-          4.429,
+          62.5,
+          4.5,
           0
         ],
         "rotation": 0,
@@ -1829,7 +2028,7 @@ window.SAMPLES = [
         "part": "straight",
         "position": [
           75,
-          22,
+          21.5,
           0
         ],
         "rotation": 90,
@@ -1840,7 +2039,7 @@ window.SAMPLES = [
         "part": "straight-half",
         "position": [
           75,
-          17,
+          16.5,
           0
         ],
         "rotation": 90,
@@ -1851,7 +2050,7 @@ window.SAMPLES = [
         "part": "straight-quarter",
         "position": [
           75,
-          14.5,
+          14,
           0
         ],
         "rotation": 90,
@@ -1861,8 +2060,8 @@ window.SAMPLES = [
         "id": "rail-224",
         "part": "straight-quarter",
         "position": [
-          84.929,
-          32.071,
+          85,
+          32,
           0
         ],
         "rotation": 90,
@@ -1872,8 +2071,8 @@ window.SAMPLES = [
         "id": "rail-245",
         "part": "text",
         "position": [
-          99,
-          39.5,
+          100,
+          38.5,
           0
         ],
         "rotation": 0,
@@ -1884,8 +2083,8 @@ window.SAMPLES = [
         "id": "rail-246",
         "part": "text",
         "position": [
-          100,
-          47,
+          100.071,
+          46.429,
           0
         ],
         "rotation": 0,
@@ -1944,8 +2143,8 @@ window.SAMPLES = [
         "id": "rail-270",
         "part": "curve",
         "position": [
-          114.929,
-          41.571,
+          115,
+          41.5,
           0
         ],
         "rotation": 180,
@@ -1988,8 +2187,8 @@ window.SAMPLES = [
         "id": "rail-302",
         "part": "turnout-a",
         "position": [
-          75.071,
-          1.429,
+          75,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -2003,8 +2202,8 @@ window.SAMPLES = [
         "id": "rail-303",
         "part": "straight",
         "position": [
-          85.071,
-          1.429,
+          85,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -2014,8 +2213,8 @@ window.SAMPLES = [
         "id": "rail-305",
         "part": "straight",
         "position": [
-          95.429,
-          1.571,
+          95,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -2025,8 +2224,8 @@ window.SAMPLES = [
         "id": "rail-306",
         "part": "straight",
         "position": [
-          105.429,
-          1.571,
+          105,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -2036,8 +2235,8 @@ window.SAMPLES = [
         "id": "rail-308",
         "part": "curve",
         "position": [
-          115.429,
-          1.571,
+          115,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -2047,8 +2246,8 @@ window.SAMPLES = [
         "id": "rail-309",
         "part": "curve",
         "position": [
-          122.429,
-          4.571,
+          122.071,
+          4.429,
           0
         ],
         "rotation": 45,
@@ -2058,8 +2257,8 @@ window.SAMPLES = [
         "id": "rail-310",
         "part": "straight-half",
         "position": [
-          125.429,
-          11.571,
+          125,
+          11.5,
           0
         ],
         "rotation": 90,
@@ -2069,8 +2268,8 @@ window.SAMPLES = [
         "id": "rail-311",
         "part": "straight-quarter",
         "position": [
-          125.429,
-          16.571,
+          125,
+          16.5,
           0
         ],
         "rotation": 90,
@@ -2080,8 +2279,8 @@ window.SAMPLES = [
         "id": "rail-312",
         "part": "straight-quarter-mm",
         "position": [
-          125.429,
-          21.071,
+          125,
+          21.5,
           0
         ],
         "rotation": 270,
@@ -2103,8 +2302,8 @@ window.SAMPLES = [
         "id": "rail-314",
         "part": "curve",
         "position": [
-          84.929,
-          34.571,
+          85,
+          34.5,
           0
         ],
         "rotation": 270,
@@ -2126,8 +2325,8 @@ window.SAMPLES = [
         "id": "rail-007",
         "part": "turnout-b",
         "position": [
-          14.929,
-          41.571,
+          15,
+          41.5,
           0
         ],
         "rotation": 180,
@@ -2141,8 +2340,8 @@ window.SAMPLES = [
         "id": "rail-008",
         "part": "turnout-b",
         "position": [
-          14.929,
-          44.571,
+          15,
+          44.5,
           0
         ],
         "rotation": 0,
@@ -2156,8 +2355,8 @@ window.SAMPLES = [
         "id": "rail-011",
         "part": "single-double-point-b",
         "position": [
-          24.929,
-          44.571,
+          25,
+          44.5,
           0
         ],
         "rotation": 180,
@@ -2170,8 +2369,8 @@ window.SAMPLES = [
         "id": "rail-013",
         "part": "straight-quarter-ff",
         "position": [
-          22.429,
-          64.571,
+          22.5,
+          64.5,
           0
         ],
         "rotation": 0,
@@ -2181,8 +2380,8 @@ window.SAMPLES = [
         "id": "rail-014",
         "part": "curve",
         "position": [
-          14.929,
-          64.571,
+          15,
+          64.5,
           0
         ],
         "rotation": 180,
@@ -2203,8 +2402,8 @@ window.SAMPLES = [
         "id": "rail-016",
         "part": "curve",
         "position": [
-          4.929,
-          54.571,
+          5,
+          54.5,
           0
         ],
         "rotation": 270,
@@ -2214,8 +2413,8 @@ window.SAMPLES = [
         "id": "rail-017",
         "part": "curve",
         "position": [
-          4.929,
-          31.571,
+          5,
+          31.5,
           0
         ],
         "rotation": 270,
@@ -2225,8 +2424,8 @@ window.SAMPLES = [
         "id": "rail-018",
         "part": "straight",
         "position": [
-          4.929,
-          21.571,
+          5,
+          21.5,
           0
         ],
         "rotation": 90,
@@ -2236,8 +2435,8 @@ window.SAMPLES = [
         "id": "rail-027",
         "part": "turnout-a",
         "position": [
-          24.929,
-          44.571,
+          25,
+          44.5,
           0
         ],
         "rotation": 180,
@@ -2251,8 +2450,8 @@ window.SAMPLES = [
         "id": "rail-030",
         "part": "straight-half",
         "position": [
-          22.429,
-          64.571,
+          22.5,
+          64.5,
           0
         ],
         "rotation": 180,
@@ -2262,8 +2461,8 @@ window.SAMPLES = [
         "id": "rail-031",
         "part": "straight-quarter",
         "position": [
-          17.429,
-          64.571,
+          17.5,
+          64.5,
           0
         ],
         "rotation": 180,
@@ -2317,8 +2516,8 @@ window.SAMPLES = [
         "id": "rail-058",
         "part": "turnout-a",
         "position": [
-          -5.071,
-          1.571,
+          -5,
+          1.5,
           0
         ],
         "rotation": 180,
@@ -2332,8 +2531,8 @@ window.SAMPLES = [
         "id": "rail-060",
         "part": "turnout-b",
         "position": [
-          14.929,
-          1.571,
+          15,
+          1.5,
           0
         ],
         "rotation": 0,
@@ -2347,8 +2546,8 @@ window.SAMPLES = [
         "id": "rail-063",
         "part": "straight-half",
         "position": [
-          4.929,
-          16.571,
+          5,
+          16.5,
           0
         ],
         "rotation": 90,
@@ -2358,8 +2557,8 @@ window.SAMPLES = [
         "id": "rail-064",
         "part": "straight-quarter",
         "position": [
-          4.929,
-          14.071,
+          5,
+          14,
           0
         ],
         "rotation": 90,
@@ -2369,8 +2568,8 @@ window.SAMPLES = [
         "id": "rail-068",
         "part": "straight-quarter-ff",
         "position": [
-          4.929,
-          11.571,
+          5,
+          11.5,
           0
         ],
         "rotation": 90,
@@ -2380,8 +2579,8 @@ window.SAMPLES = [
         "id": "rail-069",
         "part": "curve",
         "position": [
-          4.929,
-          11.571,
+          5,
+          11.5,
           0
         ],
         "rotation": 270,
@@ -2402,8 +2601,8 @@ window.SAMPLES = [
         "id": "rail-074",
         "part": "curve",
         "position": [
-          -22,
-          21.5,
+          -22.071,
+          21.571,
           0
         ],
         "rotation": 225,
@@ -2435,8 +2634,8 @@ window.SAMPLES = [
         "id": "rail-077",
         "part": "curve",
         "position": [
-          -22,
-          19,
+          -22.071,
+          18.571,
           0
         ],
         "rotation": 225,
@@ -2528,17 +2727,6 @@ window.SAMPLES = [
         "part": "curve",
         "position": [
           47.5,
-          64.5,
-          0
-        ],
-        "rotation": 180,
-        "flip": false
-      },
-      {
-        "id": "rail-105",
-        "part": "straight-half",
-        "position": [
-          52.5,
           64.5,
           0
         ],
@@ -2639,8 +2827,8 @@ window.SAMPLES = [
         "id": "rail-009",
         "part": "text",
         "position": [
-          -26,
-          142,
+          23.5,
+          141,
           0
         ],
         "rotation": 0,
@@ -2663,7 +2851,7 @@ window.SAMPLES = [
         "id": "rail-029",
         "part": "text",
         "position": [
-          0,
+          -1,
           116.5,
           0
         ],
@@ -2675,12 +2863,12 @@ window.SAMPLES = [
         "id": "rail-032",
         "part": "turnout-b",
         "position": [
-          13.5,
-          119.5,
+          14.107,
+          119.607,
           0
         ],
-        "rotation": 0,
-        "flip": true,
+        "rotation": 180,
+        "flip": false,
         "states": {
           "point": "branch"
         },
@@ -2690,8 +2878,8 @@ window.SAMPLES = [
         "id": "rail-033",
         "part": "turnout-b",
         "position": [
-          13.5,
-          122.5,
+          14.107,
+          122.607,
           0
         ],
         "rotation": 0,
@@ -2705,22 +2893,22 @@ window.SAMPLES = [
         "id": "rail-034",
         "part": "single-double-point-b",
         "position": [
-          23.5,
-          119.5,
+          24.107,
+          119.607,
           0
         ],
         "rotation": 0,
         "flip": true,
         "states": {
-          "point": "branch"
+          "point": "straight"
         }
       },
       {
         "id": "rail-035",
         "part": "turnout-a",
         "position": [
-          23.5,
-          119.5,
+          24.107,
+          119.607,
           0
         ],
         "rotation": 180,
@@ -2746,7 +2934,7 @@ window.SAMPLES = [
         "id": "rail-037",
         "part": "text",
         "position": [
-          35.5,
+          60.5,
           122,
           0
         ],
@@ -2755,44 +2943,11 @@ window.SAMPLES = [
         "text": "READ"
       },
       {
-        "id": "rail-038",
-        "part": "curve",
-        "position": [
-          3.5,
-          129.5,
-          0
-        ],
-        "rotation": 270,
-        "flip": false
-      },
-      {
-        "id": "rail-042",
-        "part": "curve",
-        "position": [
-          6.429,
-          136.571,
-          0
-        ],
-        "rotation": 225,
-        "flip": false
-      },
-      {
-        "id": "rail-043",
-        "part": "curve",
-        "position": [
-          13.5,
-          139.5,
-          0
-        ],
-        "rotation": 180,
-        "flip": false
-      },
-      {
         "id": "rail-049",
         "part": "curve",
         "position": [
-          3.5,
-          132.5,
+          4.107,
+          132.607,
           0
         ],
         "rotation": 270,
@@ -2802,8 +2957,8 @@ window.SAMPLES = [
         "id": "rail-050",
         "part": "straight",
         "position": [
-          3.5,
-          142.5,
+          4.107,
+          142.607,
           0
         ],
         "rotation": 270,
@@ -2813,8 +2968,8 @@ window.SAMPLES = [
         "id": "rail-051",
         "part": "curve",
         "position": [
-          0.571,
-          149.571,
+          1.178,
+          149.678,
           0
         ],
         "rotation": 135,
@@ -2824,8 +2979,8 @@ window.SAMPLES = [
         "id": "rail-052",
         "part": "curve",
         "position": [
-          -6.5,
-          152.5,
+          -5.893,
+          152.607,
           0
         ],
         "rotation": 180,
@@ -2859,8 +3014,8 @@ window.SAMPLES = [
         "id": "rail-071",
         "part": "turnout-b",
         "position": [
-          -26.5,
-          152.5,
+          -25.893,
+          152.607,
           0
         ],
         "rotation": 180,
@@ -2874,8 +3029,8 @@ window.SAMPLES = [
         "id": "rail-080",
         "part": "turnout-b",
         "position": [
-          -26.5,
-          155.5,
+          -25.893,
+          155.607,
           0
         ],
         "rotation": 0,
@@ -2889,8 +3044,8 @@ window.SAMPLES = [
         "id": "rail-081",
         "part": "single-double-point-b",
         "position": [
-          -16.5,
-          152.5,
+          -15.893,
+          152.607,
           0
         ],
         "rotation": 0,
@@ -2903,8 +3058,8 @@ window.SAMPLES = [
         "id": "rail-082",
         "part": "turnout-a",
         "position": [
-          -16.5,
-          152.5,
+          -15.893,
+          152.607,
           0
         ],
         "rotation": 180,
@@ -2930,8 +3085,8 @@ window.SAMPLES = [
         "id": "rail-117",
         "part": "curve",
         "position": [
-          -36.5,
-          165.5,
+          -35.893,
+          165.607,
           0
         ],
         "rotation": 270,
@@ -2941,8 +3096,8 @@ window.SAMPLES = [
         "id": "rail-118",
         "part": "curve",
         "position": [
-          -33.571,
-          172.571,
+          -32.964,
+          172.678,
           0
         ],
         "rotation": 225,
@@ -2952,41 +3107,8 @@ window.SAMPLES = [
         "id": "rail-119",
         "part": "curve",
         "position": [
-          -26.5,
-          175.5,
-          0
-        ],
-        "rotation": 180,
-        "flip": false
-      },
-      {
-        "id": "rail-120",
-        "part": "straight",
-        "position": [
-          -16.5,
-          175.5,
-          0
-        ],
-        "rotation": 180,
-        "flip": false
-      },
-      {
-        "id": "rail-121",
-        "part": "straight",
-        "position": [
-          -6.5,
-          175.5,
-          0
-        ],
-        "rotation": 180,
-        "flip": false
-      },
-      {
-        "id": "rail-122",
-        "part": "straight",
-        "position": [
-          3.5,
-          175.5,
+          -25.893,
+          175.607,
           0
         ],
         "rotation": 180,
@@ -2996,8 +3118,8 @@ window.SAMPLES = [
         "id": "rail-144",
         "part": "curve",
         "position": [
-          -36.5,
-          142.5,
+          -35.893,
+          142.607,
           0
         ],
         "rotation": 270,
@@ -3007,8 +3129,8 @@ window.SAMPLES = [
         "id": "rail-145",
         "part": "curve",
         "position": [
-          -33.571,
-          135.429,
+          -32.964,
+          135.536,
           0
         ],
         "rotation": 315,
@@ -3018,66 +3140,19 @@ window.SAMPLES = [
         "id": "rail-146",
         "part": "curve",
         "position": [
-          -26.5,
-          132.5,
+          -25.893,
+          132.607,
           0
         ],
         "rotation": 0,
         "flip": true
-      },
-      {
-        "id": "rail-147",
-        "part": "curve",
-        "position": [
-          -19.429,
-          135.429,
-          0
-        ],
-        "rotation": 45,
-        "flip": true
-      },
-      {
-        "id": "rail-148",
-        "part": "straight-half",
-        "position": [
-          -15.893,
-          138.964,
-          0
-        ],
-        "rotation": 225,
-        "flip": false
-      },
-      {
-        "id": "rail-154",
-        "part": "single-double-point-a",
-        "position": [
-          23.5,
-          139.5,
-          0
-        ],
-        "rotation": 0,
-        "flip": true,
-        "states": {
-          "point": "straight"
-        }
-      },
-      {
-        "id": "rail-155",
-        "part": "straight",
-        "position": [
-          33.5,
-          139.5,
-          0
-        ],
-        "rotation": 180,
-        "flip": false
       },
       {
         "id": "rail-156",
         "part": "text",
         "position": [
-          32,
-          137.5,
+          61.5,
+          129.5,
           0
         ],
         "rotation": 0,
@@ -3088,8 +3163,8 @@ window.SAMPLES = [
         "id": "rail-158",
         "part": "text",
         "position": [
-          31,
-          144,
+          61.5,
+          138.5,
           0
         ],
         "rotation": 0,
@@ -3097,66 +3172,281 @@ window.SAMPLES = [
         "text": "OUT-0"
       },
       {
-        "id": "rail-174",
-        "part": "curve",
+        "id": "rail-187",
+        "part": "train",
         "position": [
-          10.571,
-          172.571,
+          61,
+          119.5,
           0
         ],
-        "rotation": 135,
-        "flip": false
+        "rotation": 180,
+        "flip": false,
+        "color": "#269c86"
       },
       {
-        "id": "rail-175",
-        "part": "curve",
-        "position": [
-          13.5,
-          165.5,
-          0
-        ],
-        "rotation": 90,
-        "flip": false
-      },
-      {
-        "id": "rail-176",
+        "id": "rail-188",
         "part": "straight",
         "position": [
-          13.5,
+          34.107,
+          119.607,
+          0
+        ],
+        "rotation": 0,
+        "flip": false
+      },
+      {
+        "id": "rail-010",
+        "part": "curve",
+        "position": [
+          82.071,
+          4.929,
+          0
+        ],
+        "rotation": 45,
+        "flip": false
+      },
+      {
+        "id": "rail-012",
+        "part": "curve",
+        "position": [
+          72.071,
+          7.429,
+          0
+        ],
+        "rotation": 45,
+        "flip": false
+      },
+      {
+        "id": "rail-021",
+        "part": "straight",
+        "position": [
+          -15.893,
+          175.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-084",
+        "part": "straight",
+        "position": [
+          -15.893,
+          132.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-140",
+        "part": "train",
+        "position": [
+          0,
+          122.5,
+          0
+        ],
+        "rotation": 0,
+        "flip": false,
+        "color": "#d42e51"
+      },
+      {
+        "id": "rail-141",
+        "part": "straight",
+        "position": [
+          -5.893,
+          119.607,
+          0
+        ],
+        "rotation": 0,
+        "flip": false
+      },
+      {
+        "id": "rail-142",
+        "part": "straight",
+        "position": [
+          -5.893,
+          122.607,
+          0
+        ],
+        "rotation": 0,
+        "flip": false
+      },
+      {
+        "id": "rail-143",
+        "part": "straight",
+        "position": [
+          -45.893,
+          152.607,
+          0
+        ],
+        "rotation": 0,
+        "flip": false
+      },
+      {
+        "id": "rail-147",
+        "part": "straight",
+        "position": [
+          -45.893,
+          155.607,
+          0
+        ],
+        "rotation": 0,
+        "flip": false
+      },
+      {
+        "id": "rail-148",
+        "part": "train",
+        "position": [
+          -39.5,
           155.5,
           0
         ],
-        "rotation": 90,
+        "rotation": 0,
+        "flip": false,
+        "color": "#d42e51"
+      },
+      {
+        "id": "rail-149",
+        "part": "straight",
+        "position": [
+          44.107,
+          119.607,
+          0
+        ],
+        "rotation": 0,
         "flip": false
       },
       {
-        "id": "rail-177",
+        "id": "rail-151",
+        "part": "single-double-point-a",
+        "position": [
+          54.107,
+          132.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false,
+        "states": {
+          "point": "straight"
+        }
+      },
+      {
+        "id": "rail-155",
         "part": "curve",
         "position": [
-          16.429,
-          148.429,
+          4.107,
+          109.607,
+          0
+        ],
+        "rotation": 270,
+        "flip": true
+      },
+      {
+        "id": "rail-159",
+        "part": "curve",
+        "position": [
+          7.036,
+          102.536,
           0
         ],
         "rotation": 315,
         "flip": true
       },
       {
-        "id": "rail-178",
+        "id": "rail-160",
         "part": "curve",
         "position": [
-          23.5,
-          145.5,
+          14.107,
+          99.607,
           0
         ],
         "rotation": 0,
         "flip": true
       },
       {
+        "id": "rail-161",
+        "part": "straight",
+        "position": [
+          24.107,
+          99.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-171",
+        "part": "curve",
+        "position": [
+          31.178,
+          102.536,
+          0
+        ],
+        "rotation": 45,
+        "flip": true
+      },
+      {
+        "id": "rail-172",
+        "part": "curve",
+        "position": [
+          34.107,
+          109.607,
+          0
+        ],
+        "rotation": 90,
+        "flip": true
+      },
+      {
+        "id": "rail-173",
+        "part": "straight",
+        "position": [
+          34.107,
+          119.607,
+          0
+        ],
+        "rotation": 270,
+        "flip": false
+      },
+      {
+        "id": "rail-176",
+        "part": "curve",
+        "position": [
+          37.036,
+          126.678,
+          0
+        ],
+        "rotation": 225,
+        "flip": false
+      },
+      {
+        "id": "rail-177",
+        "part": "curve",
+        "position": [
+          44.107,
+          129.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-178",
+        "part": "straight",
+        "position": [
+          24.107,
+          132.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
         "id": "rail-179",
         "part": "straight",
         "position": [
-          33.5,
-          145.5,
+          34.107,
+          132.607,
           0
         ],
         "rotation": 180,
@@ -3166,67 +3456,209 @@ window.SAMPLES = [
         "id": "rail-180",
         "part": "straight",
         "position": [
-          13.5,
-          142.5,
+          44.107,
+          132.607,
           0
         ],
         "rotation": 180,
         "flip": false
       },
       {
-        "id": "rail-182",
+        "id": "rail-191",
         "part": "straight",
         "position": [
-          3.5,
-          142.5,
+          64.107,
+          132.607,
           0
         ],
         "rotation": 180,
         "flip": false
       },
       {
-        "id": "rail-183",
-        "part": "straight-quarter",
+        "id": "rail-192",
+        "part": "straight",
         "position": [
-          -6.5,
-          142.5,
+          -5.893,
+          132.607,
           0
         ],
         "rotation": 180,
         "flip": false
       },
       {
-        "id": "rail-184",
+        "id": "rail-193",
+        "part": "straight",
+        "position": [
+          4.107,
+          132.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-195",
+        "part": "straight",
+        "position": [
+          14.107,
+          132.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-196",
+        "part": "straight",
+        "position": [
+          -5.893,
+          175.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-197",
+        "part": "straight",
+        "position": [
+          4.107,
+          175.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-199",
         "part": "curve",
         "position": [
-          -9,
-          142.5,
+          11.178,
+          172.678,
           0
         ],
-        "rotation": 180,
+        "rotation": 135,
         "flip": false
       },
       {
-        "id": "rail-187",
-        "part": "train",
+        "id": "rail-200",
+        "part": "curve",
         "position": [
-          38.5,
-          119.5,
+          14.107,
+          165.607,
           0
         ],
-        "rotation": 180,
-        "flip": false,
-        "color": "#e76f51"
+        "rotation": 90,
+        "flip": false
       },
       {
-        "id": "rail-188",
+        "id": "rail-201",
         "part": "straight",
         "position": [
-          33.5,
-          119.5,
+          14.107,
+          155.607,
+          0
+        ],
+        "rotation": 90,
+        "flip": false
+      },
+      {
+        "id": "rail-202",
+        "part": "straight",
+        "position": [
+          14.107,
+          145.607,
+          0
+        ],
+        "rotation": 90,
+        "flip": false
+      },
+      {
+        "id": "rail-203",
+        "part": "curve",
+        "position": [
+          17.036,
+          138.536,
+          0
+        ],
+        "rotation": 315,
+        "flip": true
+      },
+      {
+        "id": "rail-204",
+        "part": "curve",
+        "position": [
+          24.107,
+          135.607,
           0
         ],
         "rotation": 0,
+        "flip": true
+      },
+      {
+        "id": "rail-205",
+        "part": "straight",
+        "position": [
+          34.107,
+          135.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-207",
+        "part": "straight",
+        "position": [
+          44.107,
+          135.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-208",
+        "part": "straight",
+        "position": [
+          54.107,
+          135.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-209",
+        "part": "straight",
+        "position": [
+          64.107,
+          135.607,
+          0
+        ],
+        "rotation": 180,
+        "flip": false
+      },
+      {
+        "id": "rail-210",
+        "part": "straight",
+        "position": [
+          54.107,
+          119.607,
+          0
+        ],
+        "rotation": 0,
+        "flip": false
+      },
+      {
+        "id": "rail-019",
+        "part": "straight-half",
+        "position": [
+          52.5,
+          64.5,
+          0
+        ],
+        "rotation": 180,
         "flip": false
       }
     ],
@@ -3253,16 +3685,6 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-134",
-          "connector": 1
-        },
-        "to": {
-          "railId": "rail-006",
-          "connector": 0
-        }
-      },
-      {
-        "from": {
           "railId": "rail-025",
           "connector": 0
         },
@@ -3393,16 +3815,6 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-194",
-          "connector": 1
-        },
-        "to": {
-          "railId": "rail-193",
-          "connector": 0
-        }
-      },
-      {
-        "from": {
           "railId": "rail-097",
           "connector": 2
         },
@@ -3469,16 +3881,6 @@ window.SAMPLES = [
         "to": {
           "railId": "rail-126",
           "connector": 2
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-193",
-          "connector": 1
-        },
-        "to": {
-          "railId": "rail-223",
-          "connector": 0
         }
       },
       {
@@ -3733,16 +4135,6 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-134",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-302",
-          "connector": 2
-        }
-      },
-      {
-        "from": {
           "railId": "rail-302",
           "connector": 1
         },
@@ -4293,26 +4685,6 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-104",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-105",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-105",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-106",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
           "railId": "rail-106",
           "connector": 0
         },
@@ -4403,16 +4775,6 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-032",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-034",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
           "railId": "rail-035",
           "connector": 0
         },
@@ -4423,36 +4785,6 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-032",
-          "connector": 2
-        },
-        "to": {
-          "railId": "rail-038",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-038",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-042",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-042",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-043",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
           "railId": "rail-034",
           "connector": 2
         },
@@ -4463,6 +4795,196 @@ window.SAMPLES = [
       },
       {
         "from": {
+          "railId": "rail-050",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-051",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-051",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-052",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-082",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-081",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-081",
+          "connector": 2
+        },
+        "to": {
+          "railId": "rail-080",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-052",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-082",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-080",
+          "connector": 2
+        },
+        "to": {
+          "railId": "rail-117",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-117",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-118",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-118",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-119",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-081",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-071",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-071",
+          "connector": 2
+        },
+        "to": {
+          "railId": "rail-144",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-144",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-145",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-145",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-146",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-035",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-188",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-006",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-010",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-010",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-302",
+          "connector": 2
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-223",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-012",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-194",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-012",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-119",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-021",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-146",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-084",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
           "railId": "rail-033",
           "connector": 2
         },
@@ -4473,168 +4995,38 @@ window.SAMPLES = [
       },
       {
         "from": {
+          "railId": "rail-050",
+          "connector": 1
+        },
+        "to": {
           "railId": "rail-049",
           "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-033",
+          "connector": 1
         },
         "to": {
-          "railId": "rail-050",
+          "railId": "rail-142",
           "connector": 1
         }
       },
       {
         "from": {
-          "railId": "rail-050",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-051",
+          "railId": "rail-071",
           "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-051",
-          "connector": 0
         },
         "to": {
-          "railId": "rail-052",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-082",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-081",
-          "connector": 0
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-081",
-          "connector": 2
-        },
-        "to": {
-          "railId": "rail-080",
-          "connector": 0
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-052",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-082",
+          "railId": "rail-143",
           "connector": 1
         }
       },
       {
         "from": {
           "railId": "rail-080",
-          "connector": 2
-        },
-        "to": {
-          "railId": "rail-117",
           "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-117",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-118",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-118",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-119",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-119",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-120",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-120",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-121",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-121",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-122",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-081",
-          "connector": 1
-        },
-        "to": {
-          "railId": "rail-071",
-          "connector": 0
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-071",
-          "connector": 2
-        },
-        "to": {
-          "railId": "rail-144",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-144",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-145",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-145",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-146",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-146",
-          "connector": 0
         },
         "to": {
           "railId": "rail-147",
@@ -4643,28 +5035,38 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-147",
-          "connector": 0
+          "railId": "rail-188",
+          "connector": 1
         },
         "to": {
-          "railId": "rail-148",
+          "railId": "rail-149",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-034",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-032",
+          "connector": 0
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-141",
+          "connector": 1
+        },
+        "to": {
+          "railId": "rail-032",
           "connector": 1
         }
       },
       {
         "from": {
-          "railId": "rail-043",
-          "connector": 0
-        },
-        "to": {
-          "railId": "rail-154",
-          "connector": 1
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-154",
-          "connector": 0
+          "railId": "rail-032",
+          "connector": 2
         },
         "to": {
           "railId": "rail-155",
@@ -4673,31 +5075,61 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-122",
+          "railId": "rail-155",
           "connector": 0
         },
         "to": {
-          "railId": "rail-174",
+          "railId": "rail-159",
           "connector": 1
         }
       },
       {
         "from": {
-          "railId": "rail-174",
+          "railId": "rail-159",
           "connector": 0
         },
         "to": {
-          "railId": "rail-175",
+          "railId": "rail-160",
           "connector": 1
         }
       },
       {
         "from": {
-          "railId": "rail-175",
+          "railId": "rail-160",
           "connector": 0
         },
         "to": {
-          "railId": "rail-176",
+          "railId": "rail-161",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-161",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-171",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-171",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-172",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-172",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-173",
           "connector": 1
         }
       },
@@ -4717,8 +5149,8 @@ window.SAMPLES = [
           "connector": 0
         },
         "to": {
-          "railId": "rail-178",
-          "connector": 1
+          "railId": "rail-151",
+          "connector": 2
         }
       },
       {
@@ -4733,61 +5165,231 @@ window.SAMPLES = [
       },
       {
         "from": {
-          "railId": "rail-154",
-          "connector": 2
+          "railId": "rail-179",
+          "connector": 0
         },
         "to": {
           "railId": "rail-180",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-151",
           "connector": 0
+        },
+        "to": {
+          "railId": "rail-191",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-084",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-192",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-192",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-193",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-193",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-195",
+          "connector": 1
         }
       },
       {
         "from": {
           "railId": "rail-180",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-151",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-173",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-176",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-195",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-178",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-021",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-196",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-196",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-197",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-197",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-199",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-199",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-200",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-200",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-201",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-201",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-202",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-202",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-203",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-203",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-204",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-204",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-205",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-205",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-207",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-207",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-208",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-208",
+          "connector": 0
+        },
+        "to": {
+          "railId": "rail-209",
+          "connector": 1
+        }
+      },
+      {
+        "from": {
+          "railId": "rail-149",
           "connector": 1
         },
         "to": {
-          "railId": "rail-182",
+          "railId": "rail-210",
           "connector": 0
         }
       },
       {
         "from": {
-          "railId": "rail-182",
-          "connector": 1
+          "railId": "rail-104",
+          "connector": 0
         },
         "to": {
-          "railId": "rail-183",
-          "connector": 0
+          "railId": "rail-019",
+          "connector": 1
         }
       },
       {
         "from": {
-          "railId": "rail-183",
+          "railId": "rail-106",
           "connector": 1
         },
         "to": {
-          "railId": "rail-184",
-          "connector": 0
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-184",
-          "connector": 1
-        },
-        "to": {
-          "railId": "rail-148",
-          "connector": 0
-        }
-      },
-      {
-        "from": {
-          "railId": "rail-035",
-          "connector": 1
-        },
-        "to": {
-          "railId": "rail-188",
+          "railId": "rail-019",
           "connector": 0
         }
       }
