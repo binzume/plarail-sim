@@ -19,7 +19,7 @@ body { margin: 0; min-width: 400px; color: var(--ink); background: #f1f4f8; }
 button, textarea { font: inherit; }
 button { cursor: pointer; }
 
-.app-header { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.app-header { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
 .section-kicker { margin: 0 0 4px; color: #91a0b5; font-size: 10px; font-weight: 800; letter-spacing: .18em; }
 h1, h2, p { margin-top: 0; }
 h1 { margin-bottom: 0; font-size: 17px; letter-spacing: -.02em; }
@@ -46,11 +46,11 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .simulation-speed-select { min-width: 52px; padding: 4px 5px; color: #596982; background: #f8fafc; border: 1px solid var(--line); border-radius: 5px; font-size: 10px; font-weight: 800; }
 .simulation-speed-select:hover { color: var(--blue); border-color: #a6bde9; background: var(--blue-soft); }
 .panel-section { padding: 10px; border-bottom: 1px solid var(--line); }
-.left-panel > .panel-section:first-child .section-heading { align-items: center; margin-bottom: 10px; }
-.section-heading { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.left-panel > .panel-section:first-child .section-heading { align-items: center; margin-bottom: 4px; }
+.section-heading { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
 .section-heading.compact { margin-bottom: 15px; }
-.part-count { display: grid; place-items: center; min-width: 24px; height: 24px; border-radius: 50%; color: var(--blue); background: var(--blue-soft); font-size: 11px; font-weight: 800; }
-.add-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.part-count { display: grid; place-items: center; min-width: 16px; padding: 1px 3px; border-radius: 10px; color: var(--blue); background: var(--blue-soft); font-size: 9px; font-weight: 400; }
+.add-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; }
 .part-button { position: relative; display: grid; grid-template-columns: 1fr; grid-template-areas: "icon" "label"; align-items: center; gap: 2px; min-width: 0; width: 100%; padding: 5px 4px 4px; text-align: center; color: var(--ink); background: #fbfcfe; border: 1px solid var(--line); border-radius: 9px; transition: .15s ease; cursor: grab; touch-action: pan-y; }
 .part-button:active { cursor: grabbing; }
 .part-button:hover { border-color: #a6bde9; background: #f5f8ff; transform: translateY(-1px); }
@@ -110,7 +110,7 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .empty-state span { font-size: 11px; }
 .empty-mark { display: grid; place-items: center; width: 43px; height: 43px; margin-bottom: 4px; border: 1px dashed #b9c5d6; border-radius: 12px; color: #8fa2c0; font-size: 27px; font-weight: 300; }
 .inspector { min-height: 0; }
-.inspector-content { margin-top: 12px; }
+.inspector-content { margin-top: 4px; }
 .no-selection { padding: 12px 8px; color: #9aa7b9; background: #f8fafc; border: 1px dashed #dbe2eb; border-radius: 8px; font-size: 11px; line-height: 1.4; text-align: center; }
 .property-title { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
 .property-name strong, .property-name small { display: block; }
@@ -173,6 +173,15 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 }
 
 @media (orientation: portrait) {
+  .app-shell { grid-template-columns: 196px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 30vh; }
+  .left-panel { grid-column: 1; grid-row: 1 / span 2; }
+  .workspace { grid-column: 2; grid-row: 1; }
+  .right-panel { grid-column: 2; grid-row: 2; height: 30vh; border-top: 1px solid var(--line); border-left: 0; }
   .selection-controls { top: auto; bottom: 14px; }
-  .selection-menu-popup { top: auto; bottom: calc(100% + 6px); }
+  .selection-controls .selection-menu-popup { top: auto; bottom: calc(100% + 6px); }
+  .load-menu-popup { top: calc(100% + 6px); bottom: auto; max-height: calc(100dvh - 54px); overflow-y: auto; }
+}
+
+@media (orientation: portrait) and (max-width: 720px) {
+  .app-shell { grid-template-columns: 72px minmax(0, 1fr); }
 }
