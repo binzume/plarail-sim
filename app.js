@@ -55,7 +55,7 @@ const layout = {
   rails: [],
   connections: []
 };
-const state = { selectedRailId: null, selectedRailIds: [], drag: null, routeDrag: null, paletteDrag: null, pan: null, selectionDrag: null, justDragged: false, justRouteDragged: false, justPaletteDragged: false, justPanned: false, justRangeSelected: false, idCounter: 1 };
+const state = { selectedRailId: null, selectedRailIds: [], drag: null, routeDrag: null, paletteDrag: null, pan: null, pinch: null, selectionDrag: null, justDragged: false, justRouteDragged: false, justPaletteDragged: false, justPanned: false, justRangeSelected: false, idCounter: 1 };
 const history = { undo: [], redo: [], applying: false };
 const HISTORY_LIMIT = 100;
 const viewState = { zoom: 1, viewBox: { ...BASE_VIEWBOX } };
@@ -69,6 +69,7 @@ let layoutSaveTimer = null;
 let layoutSavePromise = Promise.resolve();
 let latestSaveRequest = 0;
 let isLoadingLayout = true;
+const activeTouchPointers = new Map();
 
 const canvas = document.querySelector("#layout-canvas");
 const canvasWrap = document.querySelector(".canvas-wrap");
@@ -2107,11 +2108,15 @@ function fitLayout() {
   document.querySelector("#zoom-value").textContent = `${Math.round(viewState.zoom * 100)}%`;
 }
 
-function svgPoint(event) {
+function svgPointAt(clientX, clientY) {
   const point = canvas.createSVGPoint();
-  point.x = event.clientX;
-  point.y = event.clientY;
+  point.x = clientX;
+  point.y = clientY;
   return point.matrixTransform(canvas.getScreenCTM().inverse());
+}
+
+function svgPoint(event) {
+  return svgPointAt(event.clientX, event.clientY);
 }
 
 function selectionBounds(start, end) {
@@ -2145,8 +2150,54 @@ function railsInSelection(bounds) {
   }).map(rail => rail.id);
 }
 
+function beginPinch() {
+  const pointers = Array.from(activeTouchPointers.values()).slice(0, 2);
+  if (pointers.length < 2) return;
+  const [first, second] = pointers;
+  const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+  state.pinch = {
+    pointerIds: [first.pointerId, second.pointerId],
+    startDistance: Math.max(distance, 1),
+    startZoom: viewState.zoom,
+    moved: false
+  };
+  state.pan = null;
+  state.drag = null;
+  state.paletteDrag = null;
+  state.routeDrag = null;
+  state.selectionDrag?.box.remove();
+  state.selectionDrag = null;
+  canvas.classList.remove("is-panning");
+  routePreviewLayer.replaceChildren();
+}
+
+function updatePinchZoom() {
+  if (!state.pinch) return;
+  const [firstId, secondId] = state.pinch.pointerIds;
+  const first = activeTouchPointers.get(firstId);
+  const second = activeTouchPointers.get(secondId);
+  if (!first || !second) return;
+  const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+  const centerX = (first.clientX + second.clientX) / 2;
+  const centerY = (first.clientY + second.clientY) / 2;
+  const focusPoint = svgPointAt(centerX, centerY);
+  setZoom(state.pinch.startZoom * distance / state.pinch.startDistance, focusPoint);
+  state.pinch.moved = state.pinch.moved || Math.abs(distance - state.pinch.startDistance) >= 3;
+}
+
+function trackTouchPointer(event) {
+  if (event.pointerType !== "touch" || !canvas.contains(event.target)) return;
+  activeTouchPointers.set(event.pointerId, {
+    pointerId: event.pointerId,
+    clientX: event.clientX,
+    clientY: event.clientY
+  });
+  if (activeTouchPointers.size >= 2 && !state.pinch) beginPinch();
+}
+
 function beginPan(event) {
   if (event.button !== 0) return;
+  if (event.pointerType === "touch" && (state.pinch || activeTouchPointers.size > 1)) return;
   const target = event.target;
   if (target !== canvas && !target.classList?.contains("canvas-background")) return;
   state.justPanned = false;
@@ -2159,10 +2210,14 @@ function beginPan(event) {
     canvas.setPointerCapture?.(event.pointerId);
     return;
   }
+  const screenMatrix = canvas.getScreenCTM();
+  const canvasRect = canvas.getBoundingClientRect();
   state.pan = {
     startClientX: event.clientX,
     startClientY: event.clientY,
     initialViewBox: { ...viewState.viewBox },
+    screenScaleX: Math.abs(screenMatrix?.a) || viewState.viewBox.width / canvasRect.width,
+    screenScaleY: Math.abs(screenMatrix?.d) || viewState.viewBox.height / canvasRect.height,
     moved: false
   };
   canvas.classList.add("is-panning");
@@ -2171,6 +2226,7 @@ function beginPan(event) {
 
 function beginPaletteDrag(event) {
   if (event.button !== 0) return;
+  if (event.pointerType === "touch" && state.pinch) return;
   const button = event.target.closest?.(".part-button");
   if (!button) return;
   state.justPaletteDragged = false;
@@ -2203,6 +2259,7 @@ function createPaletteRailDrag(paletteDrag, point) {
 
 function beginDrag(event, railId) {
   if (event.button !== 0) return;
+  if (event.pointerType === "touch" && state.pinch) return;
   const rail = railById(railId);
   const point = svgPoint(event);
   const dragPoint = logicalPointAtHeight(point, rail.position[2]);
@@ -2233,6 +2290,17 @@ function beginDrag(event, railId) {
 }
 
 document.addEventListener("pointermove", event => {
+  if (event.pointerType === "touch" && activeTouchPointers.has(event.pointerId)) {
+    const pointer = activeTouchPointers.get(event.pointerId);
+    pointer.clientX = event.clientX;
+    pointer.clientY = event.clientY;
+    if (state.pinch) {
+      event.preventDefault();
+      updatePinchZoom();
+      return;
+    }
+  }
+
   if (state.paletteDrag) {
     const paletteDrag = state.paletteDrag;
     const distance = Math.hypot(
@@ -2256,10 +2324,9 @@ document.addEventListener("pointermove", event => {
   }
 
   if (state.pan) {
-    const rect = canvas.getBoundingClientRect();
     const pan = state.pan;
-    const deltaX = (event.clientX - pan.startClientX) * pan.initialViewBox.width / rect.width;
-    const deltaY = (event.clientY - pan.startClientY) * pan.initialViewBox.height / rect.height;
+    const deltaX = (event.clientX - pan.startClientX) / pan.screenScaleX;
+    const deltaY = (event.clientY - pan.startClientY) / pan.screenScaleY;
     if (Math.hypot(deltaX, deltaY) < 0.05 && !pan.moved) return;
 
     pan.moved = true;
@@ -2394,6 +2461,16 @@ document.addEventListener("pointermove", event => {
 });
 
 document.addEventListener("pointerup", event => {
+  if (event.pointerType === "touch" && activeTouchPointers.has(event.pointerId)) {
+    activeTouchPointers.delete(event.pointerId);
+    if (state.pinch) {
+      state.pinch = null;
+      state.justPanned = true;
+      canvas.classList.remove("is-panning");
+      return;
+    }
+  }
+
   if (state.paletteDrag) {
     const paletteDrag = state.paletteDrag;
     state.paletteDrag = null;
@@ -2451,6 +2528,8 @@ document.addEventListener("pointerup", event => {
 });
 
 document.addEventListener("pointercancel", () => {
+  activeTouchPointers.clear();
+  state.pinch = null;
   const canceledDrag = state.drag;
   state.drag = null;
   state.routeDrag = null;
@@ -2472,6 +2551,7 @@ document.addEventListener("pointercancel", () => {
   canvas.classList.remove("is-panning");
   routePreviewLayer.replaceChildren();
 });
+document.addEventListener("pointerdown", trackTouchPointer, true);
 document.addEventListener("pointerdown", beginPaletteDrag);
 canvas.addEventListener("pointerdown", beginPan);
 canvasWrap.addEventListener("dragover", event => {

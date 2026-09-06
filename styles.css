@@ -28,7 +28,9 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .button { border: 1px solid transparent; border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 700; transition: .15s ease; }
 .button:hover { transform: translateY(-1px); }
 .button-ghost { color: #43516a; border-color: var(--line); background: white; }
-.save-status-dot { display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: #aab4c2; vertical-align: 1px; }
+.save-status-button { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; padding: 0; border: 0; border-radius: 50%; background: transparent; }
+.save-status-button:hover { transform: none; }
+.save-status-dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: #aab4c2; }
 .save-status-dot.is-saved { background: #2f9d6d; }
 .button-primary { color: white; background: #28364f; }
 .load-menu { position: relative; }
@@ -168,4 +170,9 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
   .app-shell { grid-template-columns: 72px minmax(0, 1fr) 100px; }
   .panel-section { padding: 4px; }
   .add-buttons { grid-template-columns: 1fr; }
+}
+
+@media (orientation: portrait) {
+  .selection-controls { top: auto; bottom: 14px; }
+  .selection-menu-popup { top: auto; bottom: calc(100% + 6px); }
 }
