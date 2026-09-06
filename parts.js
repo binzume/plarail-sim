@@ -31,7 +31,7 @@ window.PARTS = {
     type: "rail",
     id: "straight",
     name: { ja: "直線", en: "Straight" },
-    flippable: true,
+    flippable: false,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "male" },
       { position: [STRAIGHT_LENGTH, 0, 0], direction: 0, end: "female" }
@@ -43,7 +43,7 @@ window.PARTS = {
     type: "rail",
     id: "straight-half",
     name: { ja: "直線1/2", en: "1/2 Straight" },
-    flippable: true,
+    flippable: false,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "male" },
       { position: [HALF_STRAIGHT_LENGTH, 0, 0], direction: 0, end: "female" }
@@ -55,7 +55,7 @@ window.PARTS = {
     type: "rail",
     id: "straight-quarter",
     name: { ja: "1/4直線", en: "1/4 Straight" },
-    flippable: true,
+    flippable: false,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "male" },
       { position: [QUARTER_STRAIGHT_LENGTH, 0, 0], direction: 0, end: "female" }
@@ -67,7 +67,7 @@ window.PARTS = {
     type: "rail",
     id: "straight-quarter-mm",
     name: { ja: "1/4直線(凸凸)", en: "1/4 Straight (M-M)" },
-    flippable: true,
+    flippable: false,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "male" },
       { position: [QUARTER_STRAIGHT_LENGTH, 0, 0], direction: 0, end: "male" }
@@ -79,7 +79,7 @@ window.PARTS = {
     type: "rail",
     id: "straight-quarter-ff",
     name: { ja: "1/4直線(凹凹)", en: "1/4 Straight (F-F)" },
-    flippable: true,
+    flippable: false,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "female" },
       { position: [QUARTER_STRAIGHT_LENGTH, 0, 0], direction: 0, end: "female" }
@@ -272,7 +272,7 @@ window.PARTS = {
     type: "rail",
     id: "u-turn",
     name: { ja: "Uターン", en: "U-turn" },
-    flippable: true,
+    flippable: false,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "female" },
       { position: [0, U_TURN_CONNECTOR_SPACING, 0], direction: 180, end: "female" }
@@ -331,7 +331,7 @@ window.PARTS = {
       { id: "white", color: "#ffffff", name: { ja: "白", en: "White" } }
     ],
     size: [TRAIN_WIDTH, TRAIN_HEIGHT],
-    flippable: true,
+    flippable: false,
     connectors: []
   }
 };

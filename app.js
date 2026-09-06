@@ -756,13 +756,11 @@ function rotateSelected(delta) {
 function flipSelected() {
   const rail = railById(state.selectedRailId);
   if (!rail) return;
-  if (!PARTS[rail.part].flippable) return;
   const rails = layout.rails.filter(item => state.selectedRailIds.includes(item.id));
-  const nonFlippable = rails.find(item => !PARTS[item.part].flippable);
-  if (nonFlippable) return;
   const historyBefore = layoutSnapshot();
   rails.forEach(item => {
-    item.flip = !item.flip;
+    if (PARTS[item.part].flippable) item.flip = !item.flip;
+    else item.rotation = normalizeAngle(item.rotation + 180);
   });
   rails.forEach(item => detachInvalidConnections(item.id));
   pushHistoryIfChanged(historyBefore);
