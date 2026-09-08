@@ -18,6 +18,9 @@ const PARTS = window.PARTS;
 // samples.js is optional; an unavailable or invalid sample bundle means no sample entries.
 const SAMPLES = Array.isArray(window.SAMPLES) ? window.SAMPLES : [];
 const SWITCH_MODES = ["", "auto-switch", "fixed"];
+const SWITCH_MARKER_INSET = 1.44;
+const SWITCH_MARKER_LENGTH = 1.72;
+const SWITCH_MARKER_WIDTH = 0.56;
 
 function isRailPart(partId) {
   return PARTS[partId]?.type === "rail";
@@ -522,11 +525,10 @@ function angleDifference(a, b) {
 }
 
 function transformPoint(point, rail) {
-  const part = PARTS[rail.part];
   let [x, y, z] = point;
   if (rail.flip) {
     x = -x;
-    if (part.flipHeight !== undefined) z = part.flipHeight - z;
+    z = -z;
   }
   const radians = rail.rotation * Math.PI / 180;
   return {
@@ -596,6 +598,15 @@ function switchStatesForRail(rail) {
       switchStateForRail(rail, definition.id)
     ])
   );
+}
+
+function switchDestinationConnectorIndex(rail, definition) {
+  const pathIndex = definition.states[switchStateForRail(rail, definition.id)];
+  const path = PARTS[rail.part]?.paths?.[pathIndex];
+  if (!path) return null;
+  if (path.from === definition.connector) return path.to;
+  if (path.to === definition.connector) return path.from;
+  return null;
 }
 
 function connectionFor(railId, connectorIndex) {
@@ -785,6 +796,7 @@ function flipSelected() {
     else item.rotation = normalizeAngle(item.rotation + 180);
   });
   rails.forEach(item => detachInvalidConnections(item.id));
+  rails.forEach(item => resetConnectedGroupHeight(item.id));
   pushHistoryIfChanged(historyBefore);
   scheduleLayoutSave();
   render();
@@ -1113,109 +1125,137 @@ function curvePathPoints(pathDefinition) {
   return { endpoint, control1, control2 };
 }
 
-function sCurvePathPoints(pathDefinition) {
-  const [endX, endY] = pathDefinition.endPosition;
-  const handle = pathDefinition.radius !== undefined
-    ? pathDefinition.radius * 4 / 3
-    : endX / 3;
-  if (pathDefinition.bulgeAxis === "y") {
-    return {
-      control1: [0, handle],
-      control2: [endX, handle],
-      endpoint: [endX, endY]
+function bezierSegments(pathDefinition, part = null) {
+  const segments = pathDefinition.segments || [];
+  let start = pathStartPosition(pathDefinition, part);
+  return segments.map((segment, index) => {
+    const endpoint = segment.endPosition
+      ? [segment.endPosition[0], segment.endPosition[1], segment.endPosition[2] ?? 0]
+      : index === segments.length - 1
+        ? pathEndPosition(pathDefinition, part)
+        : null;
+    if (!endpoint) return null;
+    const result = {
+      control1: [segment.control1[0], segment.control1[1], segment.control1[2] ?? start[2]],
+      control2: [segment.control2[0], segment.control2[1], segment.control2[2] ?? endpoint[2]],
+      endpoint
     };
-  }
+    start = endpoint;
+    return result;
+  }).filter(Boolean);
+}
+
+function pathConnectorPosition(pathDefinition, part, key) {
+  const connector = part?.connectors?.[pathDefinition[key]];
+  return connector ? [...connector.position] : null;
+}
+
+function pathStartPosition(pathDefinition, part) {
+  return pathConnectorPosition(pathDefinition, part, "from") || [0, 0, 0];
+}
+
+function pathEndPosition(pathDefinition, part) {
+  const connectorPosition = pathConnectorPosition(pathDefinition, part, "to");
+  if (connectorPosition) return connectorPosition;
+  const endPosition = pathDefinition.endPosition || [pathDefinition.length ?? STRAIGHT_LENGTH, 0];
+  return [endPosition[0], endPosition[1], 0];
+}
+
+function pathCurveRotation(pathDefinition, part) {
+  if (Number.isFinite(pathDefinition.rotation)) return pathDefinition.rotation;
+  const connector = part?.connectors?.[pathDefinition.from];
+  return connector ? 180 - connector.direction : 0;
+}
+
+function rotatePathPoint(point, origin, rotation) {
+  const radians = rotation * Math.PI / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  return [
+    origin[0] + point[0] * cos - point[1] * sin,
+    origin[1] + point[0] * sin + point[1] * cos,
+    origin[2] + (point[2] ?? 0)
+  ];
+}
+
+function curvePathLocalPoints(pathDefinition, part) {
+  const start = pathStartPosition(pathDefinition, part);
+  const rotation = pathCurveRotation(pathDefinition, part);
+  const curve = curvePathPoints(pathDefinition);
   return {
-    control1: [handle, 0],
-    control2: [pathDefinition.radius !== undefined ? handle : endX - handle, endY],
-    endpoint: [endX, endY]
+    start,
+    control1: rotatePathPoint([...curve.control1, 0], start, rotation),
+    control2: rotatePathPoint([...curve.control2, 0], start, rotation),
+    endpoint: rotatePathPoint([...curve.endpoint, 0], start, rotation)
   };
 }
 
-function sCurveLocalPoints(pathDefinition) {
-  const { control1, control2, endpoint } = sCurvePathPoints(pathDefinition);
-  const endZ = pathDefinition.height ?? 0;
-  return {
-    start: [0, 0, 0],
-    control1: [...control1, 0],
-    control2: [...control2, endZ],
-    endpoint: [...endpoint, endZ]
-  };
-}
-
-function bezierSegments(pathDefinition) {
-  return (pathDefinition.segments || []).map(segment => ({
-    control1: [segment.control1[0], segment.control1[1], segment.control1[2] ?? 0],
-    control2: [segment.control2[0], segment.control2[1], segment.control2[2] ?? 0],
-    endpoint: [segment.endPosition[0], segment.endPosition[1], segment.endPosition[2] ?? 0]
-  }));
-}
-
-function pathForDefinition(pathDefinition) {
+function localPathSegments(pathDefinition, part = null) {
   if (pathDefinition.shape === "straight") {
-    const endPosition = pathDefinition.endPosition || [pathDefinition.length ?? STRAIGHT_LENGTH, 0];
-    return `M 0 0 L ${endPosition[0]} ${endPosition[1]}`;
+    const start = pathStartPosition(pathDefinition, part);
+    const endpoint = pathEndPosition(pathDefinition, part);
+    return [{
+      start,
+      control1: [
+        start[0] + (endpoint[0] - start[0]) / 3,
+        start[1] + (endpoint[1] - start[1]) / 3,
+        start[2] + (endpoint[2] - start[2]) / 3
+      ],
+      control2: [
+        start[0] + (endpoint[0] - start[0]) * 2 / 3,
+        start[1] + (endpoint[1] - start[1]) * 2 / 3,
+        start[2] + (endpoint[2] - start[2]) * 2 / 3
+      ],
+      endpoint
+    }];
   }
   if (pathDefinition.shape === "curve") {
-    const { endpoint, control1, control2 } = curvePathPoints(pathDefinition);
-    return `M 0 0 C ${control1[0]} 0 ${control2[0]} ${control2[1]} ${endpoint[0]} ${endpoint[1]}`;
-  }
-  if (pathDefinition.shape === "s-curve") {
-    const { control1, control2, endpoint } = sCurvePathPoints(pathDefinition);
-    return `M 0 0 C ${control1[0]} ${control1[1]} ${control2[0]} ${control2[1]} ${endpoint[0]} ${endpoint[1]}`;
+    const { start, control1, control2, endpoint } = curvePathLocalPoints(pathDefinition, part);
+    return [{ start, control1, control2, endpoint }];
   }
   if (pathDefinition.shape === "bezier") {
-    return `M 0 0 ${bezierSegments(pathDefinition).map(segment =>
-      `C ${segment.control1[0]} ${segment.control1[1]} ${segment.control2[0]} ${segment.control2[1]} ${segment.endpoint[0]} ${segment.endpoint[1]}`
-    ).join(" ")}`;
+    const segments = bezierSegments(pathDefinition, part);
+    let start = pathStartPosition(pathDefinition, part);
+    return segments.map(segment => {
+      const result = { start, ...segment };
+      start = segment.endpoint;
+      return result;
+    });
   }
-  return "";
+  return [];
+}
+
+function pathForDefinition(pathDefinition, part = null) {
+  const segments = localPathSegments(pathDefinition, part);
+  if (!segments.length) return "";
+  const formatPoint = point => `${point[0]} ${point[1]}`;
+  return `M ${formatPoint(segments[0].start)} ${segments.map(segment =>
+    `C ${formatPoint(segment.control1)} ${formatPoint(segment.control2)} ${formatPoint(segment.endpoint)}`
+  ).join(" ")}`;
 }
 
 function pathForRailDefinition(pathDefinition, rail, projectHeight = true) {
+  const part = PARTS[rail.part];
   const projectLocalPoint = point => {
     const worldPoint = transformPoint(point, rail);
     return projectHeight ? projectWorldPoint(worldPoint) : worldPoint;
   };
   const formatPoint = point => `${point.x} ${point.y}`;
-  const start = projectLocalPoint([0, 0, 0]);
+  const segments = localPathSegments(pathDefinition, part);
+  if (!segments.length) return "";
 
-  if (pathDefinition.shape === "straight") {
-    const endPosition = pathDefinition.endPosition || [pathDefinition.length ?? STRAIGHT_LENGTH, 0];
-    const end = projectLocalPoint([endPosition[0], endPosition[1], 0]);
-    return `M ${formatPoint(start)} L ${formatPoint(end)}`;
-  }
-  if (pathDefinition.shape === "curve") {
-    const { endpoint, control1, control2 } = curvePathPoints(pathDefinition);
-    const control1Point = projectLocalPoint([...control1, 0]);
-    const control2Point = projectLocalPoint([...control2, 0]);
-    const endpointPoint = projectLocalPoint([...endpoint, 0]);
-    return `M ${formatPoint(start)} C ${formatPoint(control1Point)} ${formatPoint(control2Point)} ${formatPoint(endpointPoint)}`;
-  }
-  if (pathDefinition.shape === "s-curve") {
-    const { start: startPoint, control1, control2, endpoint } = sCurveLocalPoints(pathDefinition);
-    const projectedStart = projectLocalPoint(startPoint);
-    const control1Point = projectLocalPoint(control1);
-    const control2Point = projectLocalPoint(control2);
-    const endpointPoint = projectLocalPoint(endpoint);
-    return `M ${formatPoint(projectedStart)} C ${formatPoint(control1Point)} ${formatPoint(control2Point)} ${formatPoint(endpointPoint)}`;
-  }
-  if (pathDefinition.shape === "bezier") {
-    const segments = bezierSegments(pathDefinition);
-    let d = `M ${formatPoint(start)}`;
-    segments.forEach(segment => {
-      const control1Point = projectLocalPoint(segment.control1);
-      const control2Point = projectLocalPoint(segment.control2);
-      const endpointPoint = projectLocalPoint(segment.endpoint);
-      d += ` C ${formatPoint(control1Point)} ${formatPoint(control2Point)} ${formatPoint(endpointPoint)}`;
-    });
-    return d;
-  }
-  return "";
+  let d = `M ${formatPoint(projectLocalPoint(segments[0].start))}`;
+  segments.forEach(segment => {
+    d += ` C ${formatPoint(projectLocalPoint(segment.control1))}` +
+      ` ${formatPoint(projectLocalPoint(segment.control2))}` +
+      ` ${formatPoint(projectLocalPoint(segment.endpoint))}`;
+  });
+  return d;
 }
 
 function pathsForPart(partId) {
-  return (PARTS[partId]?.paths || []).map(pathForDefinition).filter(Boolean);
+  const part = PARTS[partId];
+  return (part?.paths || []).map(path => pathForDefinition(path, part)).filter(Boolean);
 }
 
 function pathsForRail(rail) {
@@ -1234,43 +1274,13 @@ function pathsForRail(rail) {
     .sort((a, b) => Number(a.active) - Number(b.active));
 }
 
-function localPathPoints(pathDefinition) {
-  if (pathDefinition.shape === "straight") {
-    const endPosition = pathDefinition.endPosition || [pathDefinition.length ?? STRAIGHT_LENGTH, 0];
-    return [
-      [0, 0, 0],
-      [endPosition[0], endPosition[1], 0]
-    ];
-  }
-  if (pathDefinition.shape === "curve") {
-    const { endpoint, control1, control2 } = curvePathPoints(pathDefinition);
-    return [
-      [0, 0, 0],
-      [...control1, 0],
-      [...control2, 0],
-      [...endpoint, 0]
-    ];
-  }
-  if (pathDefinition.shape === "s-curve") {
-    const { start, control1, control2, endpoint } = sCurveLocalPoints(pathDefinition);
-    return [
-      start,
-      control1,
-      control2,
-      endpoint
-    ];
-  }
-  if (pathDefinition.shape === "bezier") {
-    return [
-      [0, 0, 0],
-      ...bezierSegments(pathDefinition).flatMap(segment => [
-        segment.control1,
-        segment.control2,
-        segment.endpoint
-      ])
-    ];
-  }
-  return [];
+function localPathPoints(pathDefinition, part = null) {
+  return localPathSegments(pathDefinition, part).flatMap((segment, index) => [
+    ...(index === 0 ? [segment.start] : []),
+    segment.control1,
+    segment.control2,
+    segment.endpoint
+  ]);
 }
 
 function localPartPoints(part, instance = null) {
@@ -1294,7 +1304,7 @@ function localPartPoints(part, instance = null) {
   }
   return [
     ...(part.connectors || []).map(connector => connector.position),
-    ...(part.paths || []).flatMap(localPathPoints)
+    ...(part.paths || []).flatMap(path => localPathPoints(path, part))
   ];
 }
 
@@ -1308,14 +1318,15 @@ function partIconViewBox(partId) {
   }
   if (part?.type === "text") return "-2 -1.5 4 3";
   if (part?.paths?.length > 1) return "-1 -2.5 12 6";
-  if (pathDefinition?.shape === "bezier") return "-1 -5 18 12";
-  if (pathDefinition?.shape === "s-curve") {
-    const [endX, endY] = pathDefinition.endPosition;
+  if (pathDefinition?.shape === "bezier") {
     const padding = 0.7;
-    const minX = Math.min(0, endX) - padding;
-    const minY = Math.min(0, endY) - padding;
-    const width = Math.abs(endX) + padding * 2;
-    const height = Math.max(Math.abs(endY) + padding * 2, 2);
+    const points = localPathPoints(pathDefinition, part);
+    const xs = points.map(point => point[0]);
+    const ys = points.map(point => point[1]);
+    const minX = Math.min(...xs) - padding;
+    const minY = Math.min(...ys) - padding;
+    const width = Math.max(...xs) - Math.min(...xs) + padding * 2;
+    const height = Math.max(Math.max(...ys) - Math.min(...ys) + padding * 2, 2);
     return `${minX} ${minY} ${width} ${height}`;
   }
   if (pathDefinition?.shape === "straight") {
@@ -1851,6 +1862,58 @@ function renderTrain(rail) {
   railLayer.appendChild(group);
 }
 
+function renderSwitchMarker(group, rail, definition) {
+  if (!Number.isInteger(definition.connector)) return;
+  const targetConnector = PARTS[rail.part]?.connectors?.[definition.connector];
+  if (!targetConnector) return;
+  const target = projectWorldPoint(worldConnector(rail, definition.connector));
+  const inwardAngle = (worldConnector(rail, definition.connector).direction + 180) * Math.PI / 180;
+  const base = {
+    x: target.x + Math.cos(inwardAngle) * SWITCH_MARKER_INSET,
+    y: target.y + Math.sin(inwardAngle) * SWITCH_MARKER_INSET
+  };
+  const destinationIndex = switchDestinationConnectorIndex(rail, definition);
+  const destination = destinationIndex === null
+    ? null
+    : PARTS[rail.part]?.connectors?.[destinationIndex];
+  const destinationPoint = destination
+    ? projectWorldPoint(worldConnector(rail, destinationIndex))
+    : null;
+  const heading = destinationPoint
+    ? Math.atan2(destinationPoint.y - target.y, destinationPoint.x - target.x)
+    : inwardAngle;
+  const direction = { x: Math.cos(heading), y: Math.sin(heading) };
+  const normal = { x: -direction.y, y: direction.x };
+  const apex = {
+    x: base.x + direction.x * SWITCH_MARKER_LENGTH,
+    y: base.y + direction.y * SWITCH_MARKER_LENGTH
+  };
+  const points = [
+    apex,
+    {
+      x: base.x + normal.x * SWITCH_MARKER_WIDTH / 2,
+      y: base.y + normal.y * SWITCH_MARKER_WIDTH / 2
+    },
+    {
+      x: base.x - normal.x * SWITCH_MARKER_WIDTH / 2,
+      y: base.y - normal.y * SWITCH_MARKER_WIDTH / 2
+    }
+  ].map(point => `${point.x},${point.y}`).join(" ");
+  const isNormalMode = switchModeForRail(rail) === "";
+  const marker = createSvg("polygon", {
+    class: `switch-marker${isNormalMode ? "" : " disabled"}`,
+    points,
+    "data-rail-id": rail.id,
+    "data-switch-id": definition.id
+  });
+  marker.addEventListener("pointerdown", event => event.stopPropagation());
+  marker.addEventListener("click", event => {
+    event.stopPropagation();
+    if (isNormalMode) toggleRailSwitch(rail.id, definition.id);
+  });
+  group.appendChild(marker);
+}
+
 function renderRail(rail) {
   const part = PARTS[rail.part];
   if (part.type === "text") {
@@ -1894,6 +1957,7 @@ function renderRail(rail) {
     });
     group.appendChild(circle);
   });
+  switchDefinitions(rail.part).forEach(definition => renderSwitchMarker(group, rail, definition));
   addPartInteraction(group, rail);
   railLayer.appendChild(group);
 }
@@ -1933,8 +1997,7 @@ function renderSelection() {
   }));
 }
 
-function setSelectedSwitchState(switchId, nextState) {
-  const rail = railById(state.selectedRailId);
+function setRailSwitchState(rail, switchId, nextState) {
   const definition = rail && switchDefinitions(rail.part).find(item => item.id === switchId);
   if (!definition || !Object.prototype.hasOwnProperty.call(definition.states, nextState)) return;
   if (switchStateForRail(rail, switchId) === nextState) return;
@@ -1946,6 +2009,21 @@ function setSelectedSwitchState(switchId, nextState) {
   if (historyBefore) pushHistoryIfChanged(historyBefore);
   if (!simulator.isPlaying()) scheduleLayoutSave();
   render();
+}
+
+function setSelectedSwitchState(switchId, nextState) {
+  setRailSwitchState(railById(state.selectedRailId), switchId, nextState);
+}
+
+function toggleRailSwitch(railId, switchId) {
+  const rail = railById(railId);
+  const definition = rail && switchDefinitions(rail.part).find(item => item.id === switchId);
+  if (!definition) return;
+  const stateNames = Object.keys(definition.states);
+  const currentState = switchStateForRail(rail, switchId);
+  const currentIndex = stateNames.indexOf(currentState);
+  const nextState = stateNames[(currentIndex + 1) % stateNames.length];
+  setRailSwitchState(rail, switchId, nextState);
 }
 
 function setSelectedSwitchMode(mode) {

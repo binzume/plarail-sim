@@ -159,6 +159,10 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .connector.invalid { stroke: #d34b4b; stroke-width: .14; }
 .connector.invalid.male { fill: #f3c38c; }
 .connector.invalid.female { fill: white; }
+.switch-marker { fill: #f3c742; stroke: #8d6910; stroke-width: .06; stroke-linejoin: round; cursor: pointer; pointer-events: auto; }
+.switch-marker:hover { fill: #ffe27a; }
+.switch-marker.disabled { fill: #aeb5bf; stroke: #737b87; cursor: default; }
+.switch-marker.disabled:hover { fill: #aeb5bf; }
 .selection-outline { fill: none; stroke: var(--blue); stroke-width: .05; stroke-dasharray: .2 .14; opacity: .78; pointer-events: none; }
 .selection-box { fill: rgba(38, 103, 232, .08); stroke: var(--blue); stroke-width: .05; stroke-dasharray: .2 .14; opacity: .8; pointer-events: none; }
 .connection-line { stroke: #3f6fba; stroke-width: .16; stroke-dasharray: .22 .28; stroke-linecap: round; opacity: .8; pointer-events: none; }

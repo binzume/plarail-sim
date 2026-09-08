@@ -116,7 +116,6 @@ window.PARTS = {
     id: "slope",
     name: { ja: "坂レール", en: "Slope" },
     flippable: true,
-    flipHeight: SLOPE_HEIGHT,
     connectors: [
       { position: [0, 0, 0], direction: 180, end: "male" },
       { position: [SLOPE_LENGTH, 0, SLOPE_HEIGHT], direction: 0, end: "female" }
@@ -124,9 +123,11 @@ window.PARTS = {
     paths: [{
       from: 0,
       to: 1,
-      shape: "s-curve",
-      endPosition: [SLOPE_LENGTH, 0],
-      height: SLOPE_HEIGHT
+      shape: "bezier",
+      segments: [{
+        control1: [SLOPE_LENGTH / 3, 0],
+        control2: [SLOPE_LENGTH * 2 / 3, 0]
+      }]
     }]
   },
   "turnout-a": {
@@ -146,6 +147,7 @@ window.PARTS = {
     ],
     switches: [{
       id: "point",
+      connector: 0,
       states: { straight: 0, branch: 1 },
       default: "straight"
     }]
@@ -167,6 +169,7 @@ window.PARTS = {
     ],
     switches: [{
       id: "point",
+      connector: 0,
       states: { straight: 0, branch: 1 },
       default: "straight"
     }]
@@ -189,6 +192,7 @@ window.PARTS = {
     ],
     switches: [{
       id: "point",
+      connector: 0,
       states: { upper: 0, lower: 1 },
       default: "upper"
     }]
@@ -211,6 +215,7 @@ window.PARTS = {
     ],
     switches: [{
       id: "point",
+      connector: 0,
       states: { upper: 0, lower: 1 },
       default: "upper"
     }]
@@ -231,12 +236,16 @@ window.PARTS = {
       {
         from: 0,
         to: 2,
-        shape: "s-curve",
-        endPosition: [STRAIGHT_LENGTH, SINGLE_DOUBLE_BRANCH_OFFSET]
+        shape: "bezier",
+        segments: [{
+          control1: [STRAIGHT_LENGTH / 3, 0],
+          control2: [STRAIGHT_LENGTH * 2 / 3, SINGLE_DOUBLE_BRANCH_OFFSET]
+        }]
       }
     ],
     switches: [{
       id: "point",
+      connector: 0,
       states: { straight: 0, branch: 1 },
       default: "straight"
     }]
@@ -257,12 +266,16 @@ window.PARTS = {
       {
         from: 0,
         to: 2,
-        shape: "s-curve",
-        endPosition: [STRAIGHT_LENGTH, SINGLE_DOUBLE_BRANCH_OFFSET]
+        shape: "bezier",
+        segments: [{
+          control1: [STRAIGHT_LENGTH / 3, 0],
+          control2: [STRAIGHT_LENGTH * 2 / 3, SINGLE_DOUBLE_BRANCH_OFFSET]
+        }]
       }
     ],
     switches: [{
       id: "point",
+      connector: 0,
       states: { straight: 0, branch: 1 },
       default: "straight"
     }]
@@ -300,11 +313,58 @@ window.PARTS = {
         },
         {
           control1: [7.239, 6.5],
-          control2: [5, 3],
-          endPosition: [0, 3]
+          control2: [5, 3]
         }
       ]
     }]
+  },
+  "cross-point": {
+    schemaVersion: 1,
+    type: "rail",
+    id: "cross-point",
+    name: { ja: "交差ポイント", en: "Crossing Point" },
+    flippable: true,
+    iconViewBox: `-1 ${-(STRAIGHT_LENGTH / 2 + 1)} ${STRAIGHT_LENGTH + 2} ${STRAIGHT_LENGTH + 2}`,
+    connectors: [
+      { position: [0, 0, 0], direction: 180, end: "male" },
+      { position: [STRAIGHT_LENGTH, 0, 0], direction: 0, end: "female" },
+      { position: [STRAIGHT_LENGTH / 2, STRAIGHT_LENGTH / 2, 0], direction: 90, end: "female" },
+      { position: [STRAIGHT_LENGTH / 2, -STRAIGHT_LENGTH / 2, 0], direction: -90, end: "male" }
+    ],
+    paths: [
+      { from: 0, to: 1, shape: "straight" },
+      { from: 3, to: 2, shape: "straight" },
+      {
+        from: 0,
+        to: 3,
+        shape: "curve",
+        radius: STRAIGHT_LENGTH / 2,
+        angle: 90,
+        side: -1
+      },
+      {
+        from: 1,
+        to: 2,
+        shape: "curve",
+        radius: STRAIGHT_LENGTH / 2,
+        angle: 90,
+        side: -1
+      }
+    ],
+    switches: [
+      {
+        id: "point1",
+        connector: 0,
+        states: { straight: 0, branch: 2 },
+        default: "straight"
+      },
+      {
+        id: "point2",
+        connector: 1,
+        states: { straight: 1, branch: 3 },
+        default: "straight"
+      }
+    ]
   },
   "text": {
     schemaVersion: 1,

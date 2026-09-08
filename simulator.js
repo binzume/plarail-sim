@@ -24,7 +24,7 @@
     let [x, y, z] = point;
     if (rail.flip) {
       x = -x;
-      if (part.flipHeight !== undefined) z = part.flipHeight - z;
+      z = -z;
     }
     const radians = rail.rotation * Math.PI / 180;
     return {
@@ -60,56 +60,98 @@
     return { start: [0, 0, 0], control1, control2, endpoint };
   }
 
-  function sCurvePathPoints(pathDefinition) {
-    const [endX, endY] = pathDefinition.endPosition;
-    const handle = pathDefinition.radius !== undefined
-      ? pathDefinition.radius * 4 / 3
-      : endX / 3;
-    if (pathDefinition.bulgeAxis === "y") {
-      return {
-        start: [0, 0, 0],
-        control1: [0, handle, 0],
-        control2: [endX, handle, pathDefinition.height ?? 0],
-        endpoint: [endX, endY, pathDefinition.height ?? 0]
-      };
-    }
+  function pathConnectorPosition(pathDefinition, part, key) {
+    const connector = part?.connectors?.[pathDefinition[key]];
+    return connector ? [...connector.position] : null;
+  }
+
+  function pathStartPosition(pathDefinition, part) {
+    return pathConnectorPosition(pathDefinition, part, "from") || [0, 0, 0];
+  }
+
+  function pathEndPosition(pathDefinition, part) {
+    const connectorPosition = pathConnectorPosition(pathDefinition, part, "to");
+    if (connectorPosition) return connectorPosition;
+    const endPosition = pathDefinition.endPosition || [pathDefinition.length ?? 10, 0];
+    return [endPosition[0], endPosition[1], 0];
+  }
+
+  function pathCurveRotation(pathDefinition, part) {
+    if (Number.isFinite(pathDefinition.rotation)) return pathDefinition.rotation;
+    const connector = part?.connectors?.[pathDefinition.from];
+    return connector ? 180 - connector.direction : 0;
+  }
+
+  function rotatePathPoint(point, origin, rotation) {
+    const radians = rotation * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    return [
+      origin[0] + point[0] * cos - point[1] * sin,
+      origin[1] + point[0] * sin + point[1] * cos,
+      origin[2] + (point[2] ?? 0)
+    ];
+  }
+
+  function curvePathLocalPoints(pathDefinition, part) {
+    const start = pathStartPosition(pathDefinition, part);
+    const rotation = pathCurveRotation(pathDefinition, part);
+    const curve = curvePathPoints(pathDefinition);
     return {
-      start: [0, 0, 0],
-      control1: [handle, 0, 0],
-      control2: [pathDefinition.radius !== undefined ? handle : endX - handle, endY, pathDefinition.height ?? 0],
-      endpoint: [endX, endY, pathDefinition.height ?? 0]
+      start,
+      control1: rotatePathPoint([...curve.control1, 0], start, rotation),
+      control2: rotatePathPoint([...curve.control2, 0], start, rotation),
+      endpoint: rotatePathPoint([...curve.endpoint, 0], start, rotation)
     };
   }
 
-  function bezierSegments(pathDefinition) {
-    return (pathDefinition.segments || []).map(segment => ({
-      control1: [segment.control1[0], segment.control1[1], segment.control1[2] ?? 0],
-      control2: [segment.control2[0], segment.control2[1], segment.control2[2] ?? 0],
-      endpoint: [segment.endPosition[0], segment.endPosition[1], segment.endPosition[2] ?? 0]
-    }));
+  function bezierSegments(pathDefinition, part = null) {
+    const segments = pathDefinition.segments || [];
+    let start = pathStartPosition(pathDefinition, part);
+    return segments.map((segment, index) => {
+      const endpoint = segment.endPosition
+        ? [segment.endPosition[0], segment.endPosition[1], segment.endPosition[2] ?? 0]
+        : index === segments.length - 1
+          ? pathEndPosition(pathDefinition, part)
+          : null;
+      if (!endpoint) return null;
+      const result = {
+        control1: [segment.control1[0], segment.control1[1], segment.control1[2] ?? start[2]],
+        control2: [segment.control2[0], segment.control2[1], segment.control2[2] ?? endpoint[2]],
+        endpoint
+      };
+      start = endpoint;
+      return result;
+    }).filter(Boolean);
   }
 
-  function localCubicSegments(pathDefinition) {
+  function localCubicSegments(pathDefinition, part) {
     if (pathDefinition.shape === "straight") {
-      const endpoint = pathDefinition.endPosition || [pathDefinition.length ?? 10, 0];
+      const start = pathStartPosition(pathDefinition, part);
+      const endpoint = pathEndPosition(pathDefinition, part);
       return [{
-        start: [0, 0, 0],
-        control1: [endpoint[0] / 3, endpoint[1] / 3, 0],
-        control2: [endpoint[0] * 2 / 3, endpoint[1] * 2 / 3, 0],
-        endpoint: [endpoint[0], endpoint[1], 0]
+        start,
+        control1: [
+          start[0] + (endpoint[0] - start[0]) / 3,
+          start[1] + (endpoint[1] - start[1]) / 3,
+          start[2] + (endpoint[2] - start[2]) / 3
+        ],
+        control2: [
+          start[0] + (endpoint[0] - start[0]) * 2 / 3,
+          start[1] + (endpoint[1] - start[1]) * 2 / 3,
+          start[2] + (endpoint[2] - start[2]) * 2 / 3
+        ],
+        endpoint
       }];
     }
     if (pathDefinition.shape === "curve") {
-      const { start, control1, control2, endpoint } = curvePathPoints(pathDefinition);
-      return [{ start, control1, control2, endpoint }];
-    }
-    if (pathDefinition.shape === "s-curve") {
-      const { start, control1, control2, endpoint } = sCurvePathPoints(pathDefinition);
+      const { start, control1, control2, endpoint } = curvePathLocalPoints(pathDefinition, part);
       return [{ start, control1, control2, endpoint }];
     }
     if (pathDefinition.shape === "bezier") {
-      let start = [0, 0, 0];
-      return bezierSegments(pathDefinition).map(segment => {
+      const segments = bezierSegments(pathDefinition, part);
+      let start = pathStartPosition(pathDefinition, part);
+      return segments.map(segment => {
         const result = { start, ...segment };
         start = segment.endpoint;
         return result;
@@ -120,7 +162,7 @@
 
   function samplePath(pathDefinition, rail, part) {
     const points = [];
-    localCubicSegments(pathDefinition).forEach(segment => {
+    localCubicSegments(pathDefinition, part).forEach(segment => {
       for (let index = 0; index <= PATH_SAMPLES; index += 1) {
         if (points.length && index === 0) continue;
         const t = index / PATH_SAMPLES;
