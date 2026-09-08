@@ -64,7 +64,7 @@
             <button class="zoom-button" data-action="zoom-in" title="拡大">＋</button>
             <button class="zoom-button fit-button" data-action="fit-layout" title="全レールにフィット" aria-label="全レールにフィット">⛶</button>
           </div>
-          <svg id="layout-canvas" viewBox="0 0 48 28" role="application" aria-label="レイアウト編集キャンバス">
+          <svg id="layout-canvas" viewBox="0 0 75 44" role="application" aria-label="レイアウト編集キャンバス">
             <defs>
               <pattern id="small-grid" width="1" height="1" patternUnits="userSpaceOnUse">
                 <path d="M 1 0 L 0 0 0 1" fill="none" stroke="#dfe5ed" stroke-width=".012" />
@@ -85,8 +85,7 @@
           </svg>
           <div class="empty-state" id="empty-state">
             <div class="empty-mark">＋</div>
-            <strong>レールを追加してください</strong>
-            <span>左のボタンから直線またはカーブを選びます</span>
+            <strong>レイアウトを読み込むか、左のパーツからドラッグしてレールを追加します</strong>
           </div>
         </div>
       </section>
@@ -103,11 +102,26 @@
           </select>
         </div>
         <section class="panel-section inspector">
-          <p class="section-kicker">INSPECTOR</p>
           <div id="inspector-content" class="inspector-content">
-            <div class="no-selection">Select a rail to view<br />its properties</div>
+            <div class="no-selection" id="inspector-no-selection">Select a rail to view<br />its properties</div>
+            <div id="inspector-details" hidden>
+              <div class="property-title">
+                <div class="property-name">
+                  <strong id="inspector-part-name"></strong>
+                  <small id="inspector-part-id"></small>
+                </div>
+              </div>
+              <div class="position-property">
+                <output class="position-values">
+                  <span id="inspector-position-x"></span>
+                  <span id="inspector-position-y"></span>
+                  <span id="inspector-position-z"></span>
+                </output>
+              </div>
+              <div class="inspector-row"><output id="inspector-rotation"></output></div>
+              <div id="inspector-dynamic-controls"></div>
+            </div>
           </div>
-          <p class="help-text">左のパーツをキャンバスへドラッグして追加できます。</p>
         </section>
       </aside>
     </main>

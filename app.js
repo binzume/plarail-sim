@@ -1,14 +1,19 @@
 /* Plarail layout simulator / vanilla JS + SVG */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-const BASE_VIEWBOX = { x: 0, y: 0, width: 48, height: 28 };
+const BASE_VIEWBOX = { x: 0, y: 0, width: 75, height: 44 };
 const DEFAULT_ZOOM = 1;
 const ZOOM_MIN = 0.1;
 const ZOOM_MAX = 3;
+const FIT_ZOOM_MAX = 2;
 const MM_PER_UNIT = 216 / 10;
 const SNAP_DISTANCE = 24 / MM_PER_UNIT;
 const ANGLE_TOLERANCE = 22.5;
 const POSITION_STEP = 0.5;
+const TRAIN_SPEED_MIN = 0.4;
+const TRAIN_SPEED_MAX = 2.0;
+const TRAIN_SPEED_STEP = 0.1;
+const TRAIN_SPEED_DEFAULT = 1.0;
 const PARTS = window.PARTS;
 // samples.js is optional; an unavailable or invalid sample bundle means no sample entries.
 const SAMPLES = Array.isArray(window.SAMPLES) ? window.SAMPLES : [];
@@ -38,6 +43,12 @@ function trainColorForRail(rail) {
     : part?.color;
 }
 
+function trainSpeedForRail(rail) {
+  const speed = Number(rail?.speed);
+  if (!Number.isFinite(speed)) return TRAIN_SPEED_DEFAULT;
+  return Number(Math.min(TRAIN_SPEED_MAX, Math.max(TRAIN_SPEED_MIN, speed)).toFixed(1));
+}
+
 function textMetrics(value, part) {
   const fontSize = part.fontSize ?? 1.2;
   const lines = String(value || "").split(/\r?\n/);
@@ -46,8 +57,9 @@ function textMetrics(value, part) {
   return { fontSize, lines, width, height, lineHeight: fontSize * 1.25 };
 }
 
-const ROUTE_MAX_CURVES = 8;
+const ROUTE_MAX_CURVES = 7;
 const ROUTE_MAX_STRAIGHTS = 24;
+const ROUTE_PIECE_PENALTY = 5;
 const ROUTE_DRAG_THRESHOLD = 0.35;
 const layout = {
   schemaVersion: 1,
@@ -77,7 +89,15 @@ const railLayer = document.querySelector("#rail-layer");
 const connectionLayer = document.querySelector("#connection-layer");
 const routePreviewLayer = document.querySelector("#route-preview-layer");
 const selectionLayer = document.querySelector("#selection-layer");
-const inspector = document.querySelector("#inspector-content");
+const inspectorNoSelection = document.querySelector("#inspector-no-selection");
+const inspectorDetails = document.querySelector("#inspector-details");
+const inspectorPartName = document.querySelector("#inspector-part-name");
+const inspectorPartId = document.querySelector("#inspector-part-id");
+const inspectorPositionX = document.querySelector("#inspector-position-x");
+const inspectorPositionY = document.querySelector("#inspector-position-y");
+const inspectorPositionZ = document.querySelector("#inspector-position-z");
+const inspectorRotation = document.querySelector("#inspector-rotation");
+const inspectorDynamicControls = document.querySelector("#inspector-dynamic-controls");
 const emptyState = document.querySelector("#empty-state");
 const railCount = document.querySelector("#rail-count");
 const selectionControls = document.querySelector("#selection-controls");
@@ -346,6 +366,7 @@ function normalizeLayout(savedLayout) {
       flip: Boolean(rail.flip),
       ...storedSwitchMode(rail),
       ...(PARTS[rail.part].type === "train" ? { color: trainColorForRail(rail) } : {}),
+      ...(PARTS[rail.part].type === "train" ? { speed: trainSpeedForRail(rail) } : {}),
       ...(PARTS[rail.part].type === "text" ? { text: typeof rail.text === "string" ? rail.text : "" } : {}),
       ...(Object.keys(switchStates).length ? { states: switchStates } : {})
     };
@@ -615,7 +636,7 @@ function addRail(partId, dropPoint = null) {
     position,
     rotation: 0,
     flip: false,
-    ...(PARTS[partId].type === "train" ? { color: PARTS[partId].color } : {}),
+    ...(PARTS[partId].type === "train" ? { color: PARTS[partId].color, speed: TRAIN_SPEED_DEFAULT } : {}),
     ...(PARTS[partId].type === "text" ? { text: "" } : {}),
     ...(Object.keys(switchStates).length ? { states: switchStates } : {})
   };
@@ -705,6 +726,7 @@ function pasteRailClipboardData(data) {
       flip: Boolean(sourceRail.flip),
       ...storedSwitchMode(sourceRail),
       ...(PARTS[sourceRail.part].type === "train" ? { color: trainColorForRail(sourceRail) } : {}),
+      ...(PARTS[sourceRail.part].type === "train" ? { speed: trainSpeedForRail(sourceRail) } : {}),
       ...(PARTS[sourceRail.part].type === "text" ? { text: typeof sourceRail.text === "string" ? sourceRail.text : "" } : {}),
       ...(Object.keys(switchStates).length ? { states: switchStates } : {})
     };
@@ -783,11 +805,27 @@ function isConnectionValid(aRef, bRef) {
   if (!a || !b || a.id === b.id) return false;
   const aConnector = worldConnector(a, aRef.connector);
   const bConnector = worldConnector(b, bRef.connector);
+  return isWithinSnapLimits(aConnector, bConnector);
+}
+
+function isWithinSnapLimits(aConnector, bConnector) {
   const distance = Math.hypot(aConnector.x - bConnector.x, aConnector.y - bConnector.y);
   return distance <= SNAP_DISTANCE &&
     Math.abs(aConnector.z - bConnector.z) <= 1 &&
-    angleDifference(aConnector.direction, bConnector.direction + 180) <= ANGLE_TOLERANCE &&
-    aConnector.end !== bConnector.end;
+    angleDifference(aConnector.direction, bConnector.direction + 180) <= ANGLE_TOLERANCE;
+}
+
+function isConnectionInvalid(aRef, bRef) {
+  const a = railById(aRef.railId);
+  const b = railById(bRef.railId);
+  if (!a || !b || a.id === b.id) return true;
+  const aConnector = worldConnector(a, aRef.connector);
+  const bConnector = worldConnector(b, bRef.connector);
+  return aConnector.end === bConnector.end || !isWithinSnapLimits(aConnector, bConnector);
+}
+
+function connectionHasInvalidState(connection) {
+  return isConnectionInvalid(connection.from, connection.to);
 }
 
 function connectorRefsEqual(a, b) {
@@ -850,7 +888,7 @@ function connectAllPossible() {
           PARTS[secondRail.part].connectors.forEach((secondConnector, secondIndex) => {
             const second = { railId: secondRail.id, connector: secondIndex };
             if (connectionFor(second.railId, second.connector)) return;
-            if (firstConnector.end === secondConnector.end || !isConnectionValid(first, second)) return;
+            if (!isConnectionValid(first, second)) return;
 
             const firstWorld = worldConnector(firstRail, firstIndex);
             const secondWorld = worldConnector(secondRail, secondIndex);
@@ -945,7 +983,6 @@ function findBestNearbyConnection(movingRailIds, predicate) {
         PARTS[otherRail.part].connectors.forEach((otherConnector, otherIndex) => {
           const anchor = { railId: otherRail.id, connector: otherIndex };
           if (connectionFor(anchor.railId, anchor.connector)) return;
-          if (movingConnector.end === otherConnector.end) return;
           const otherWorld = worldConnector(otherRail, otherIndex);
           const movingDisplay = projectWorldPoint(movingWorld);
           const otherDisplay = projectWorldPoint(otherWorld);
@@ -1381,7 +1418,14 @@ function routeAttachIndex(anchorRail, anchorIndex, partId) {
   return PARTS[partId].connectors.findIndex(connector => connector.end !== anchor.end);
 }
 
-function buildRouteCandidate(startRef, targetPoint, targetRef, curveCount, straightCount, halfStraightCount, quarterStraightCount, curveFlip) {
+function curveFlipSequences(curveCount) {
+  if (curveCount === 0) return [[]];
+  return Array.from({ length: 2 ** curveCount }, (_, mask) =>
+    Array.from({ length: curveCount }, (_, index) => Boolean(mask & (1 << index)))
+  );
+}
+
+function buildRouteCandidate(startRef, targetPoint, targetRef, curveCount, straightCount, halfStraightCount, quarterStraightCount, curveFlips, curvePartId = "curve") {
   const startRail = railById(startRef.railId);
   let anchorRail = startRail;
   let anchorIndex = startRef.connector;
@@ -1389,19 +1433,19 @@ function buildRouteCandidate(startRef, targetPoint, targetRef, curveCount, strai
   const rails = [];
   const connections = [];
   const partIds = [
-    ...Array.from({ length: curveCount }, () => "curve"),
+    ...Array.from({ length: curveCount }, () => curvePartId),
     ...Array.from({ length: straightCount }, () => "straight"),
     ...Array.from({ length: halfStraightCount }, () => "straight-half"),
     ...Array.from({ length: quarterStraightCount }, () => "straight-quarter")
   ];
 
-  partIds.forEach(partId => {
+  partIds.forEach((partId, index) => {
     const rail = {
       id: `route-preview-${pieceNumber++}`,
       part: partId,
       position: [0, 0, anchorRail.position[2]],
       rotation: 0,
-      flip: partId === "curve" ? curveFlip : false
+      flip: index < curveCount ? Boolean(curveFlips[index]) : false
     };
     const attachIndex = routeAttachIndex(anchorRail, anchorIndex, partId);
     snapRailToConnector(anchorRail, anchorIndex, rail, attachIndex);
@@ -1420,7 +1464,9 @@ function buildRouteCandidate(startRef, targetPoint, targetRef, curveCount, strai
   const distance = target
     ? Math.hypot(endpoint.x - target.x, endpoint.y - target.y)
     : Math.hypot(endpoint.x - targetPoint.x, endpoint.y - targetPoint.y);
-  const targetCompatible = !target || endpoint.end !== target.end;
+  const targetCompatible = !target || (
+    endpoint.end !== target.end && isWithinSnapLimits(endpoint, target)
+  );
 
   return {
     rails,
@@ -1429,7 +1475,7 @@ function buildRouteCandidate(startRef, targetPoint, targetRef, curveCount, strai
     endpoint,
     distance,
     targetCompatible,
-    score: distance + (target && !targetCompatible ? 1000 : 0)
+    score: distance
   };
 }
 
@@ -1438,15 +1484,16 @@ function routeHeadingAtEndpoint(rail, connectorIndex) {
 }
 
 function buildBestRoute(startRef, targetPoint, targetRef) {
+  const startRail = railById(startRef.railId);
+  const curvePartId = startRail?.part === "curve-wide" ? "curve-wide" : "curve";
   const target = targetRef
     ? worldConnector(railById(targetRef.railId), targetRef.connector)
     : targetPoint;
 
   let best = null;
   for (let curveCount = 0; curveCount <= ROUTE_MAX_CURVES; curveCount += 1) {
-    let improved = false;
-    const curveFlips = curveCount === 0 ? [false] : [false, true];
-    curveFlips.forEach(curveFlip => {
+    const curveFlipSequencesForCount = curveFlipSequences(curveCount);
+    curveFlipSequencesForCount.forEach(curveFlips => {
       const curveOnlyRoute = buildRouteCandidate(
         startRef,
         targetPoint,
@@ -1455,13 +1502,25 @@ function buildBestRoute(startRef, targetPoint, targetRef) {
         0,
         0,
         0,
-        curveFlip
+        curveFlips,
+        curvePartId
       );
       const straightHeading = routeHeadingAtEndpoint(
         curveOnlyRoute.rails.at(-1) || railById(startRef.railId),
         curveOnlyRoute.endpointRef.connector
       );
       const headingRadians = straightHeading * Math.PI / 180;
+      const targetDirection = Math.atan2(
+        target.y - curveOnlyRoute.endpoint.y,
+        target.x - curveOnlyRoute.endpoint.x
+      ) * 180 / Math.PI;
+      const targetDistance = Math.hypot(
+        target.x - curveOnlyRoute.endpoint.x,
+        target.y - curveOnlyRoute.endpoint.y
+      );
+      const directionError = targetDistance < 0.0001
+        ? 0
+        : angleDifference(straightHeading, targetDirection);
       const forwardDistance = (
         (target.x - curveOnlyRoute.endpoint.x) * Math.cos(headingRadians) +
         (target.y - curveOnlyRoute.endpoint.y) * Math.sin(headingRadians)
@@ -1470,7 +1529,6 @@ function buildBestRoute(startRef, targetPoint, targetRef) {
         0,
         Math.min(ROUTE_MAX_STRAIGHTS * 4 + 3, Math.round(forwardDistance / QUARTER_STRAIGHT_LENGTH))
       );
-      if (curveCount === 0 && straightUnits === 0) straightUnits = 1;
       let straightCount = Math.floor(straightUnits / 4);
       const remainder = straightUnits % 4;
       const halfStraightCount = remainder >= 2 ? 1 : 0;
@@ -1484,14 +1542,16 @@ function buildBestRoute(startRef, targetPoint, targetRef) {
         straightCount,
         halfStraightCount,
         quarterStraightCount,
-        curveFlip
+        curveFlips,
+        curvePartId
       );
+      const straightPieceEquivalent = straightUnits / 4;
+      const routePieceCount = curveCount + straightPieceEquivalent;
+      candidate.score = directionError + routePieceCount * ROUTE_PIECE_PENALTY;
       if (!best || candidate.score < best.score - 0.0001) {
         best = candidate;
-        improved = true;
       }
     });
-    if (!improved && best) break;
   }
   return best;
 }
@@ -1532,8 +1592,9 @@ function renderRoutePreview() {
       y2: end.y
     }));
     if (routeDrag.targetRef) {
+      const invalid = isConnectionInvalid(routeDrag.startRef, routeDrag.targetRef);
       routePreviewLayer.appendChild(createSvg("circle", {
-        class: "route-preview-target",
+        class: `route-preview-target${invalid ? " invalid" : ""}`,
         cx: end.x,
         cy: end.y,
         r: .55
@@ -1564,7 +1625,13 @@ function renderRoutePreview() {
   if (state.routeDrag.targetRef) {
     const target = worldConnector(railById(state.routeDrag.targetRef.railId), state.routeDrag.targetRef.connector);
     const displayTarget = projectWorldPoint(target);
-    routePreviewLayer.appendChild(createSvg("circle", { class: "route-preview-target", cx: displayTarget.x, cy: displayTarget.y, r: .55 }));
+    const invalid = routeDrag.preview && !routeDrag.preview.targetCompatible;
+    routePreviewLayer.appendChild(createSvg("circle", {
+      class: `route-preview-target${invalid ? " invalid" : ""}`,
+      cx: displayTarget.x,
+      cy: displayTarget.y,
+      r: .55
+    }));
   }
 }
 
@@ -1600,7 +1667,7 @@ function commitDirectConnection(routeDrag) {
 
 function commitRoute(routeDrag) {
   const route = routeDrag.preview;
-  if (!route || (routeDrag.targetRef && !route.targetCompatible)) return false;
+  if (!route || (!route.rails.length && !routeDrag.targetRef)) return false;
   const historyBefore = layoutSnapshot();
   const idMap = new Map();
   const addedRails = route.rails.map(previewRail => {
@@ -1622,6 +1689,7 @@ function commitRoute(routeDrag) {
   if (routeDrag.targetRef) {
     layout.connections.push({ from: remap(route.endpointRef), to: { ...routeDrag.targetRef } });
   }
+  if (addedRails.length) connectNearbyUnconnectedConnectors([remap(route.endpointRef).railId]);
   pushHistoryIfChanged(historyBefore);
   scheduleLayoutSave();
   render();
@@ -1811,10 +1879,12 @@ function renderRail(rail) {
     group.appendChild(createSvg("path", { d: path.d, class: "rail-hit" }));
   });
   part.connectors.forEach((connector, index) => {
-    const connected = Boolean(connectionFor(rail.id, index));
+    const connection = connectionFor(rail.id, index);
+    const connected = Boolean(connection);
+    const invalid = connected && connectionHasInvalidState(connection);
     const point = projectWorldPoint(worldConnector(rail, index));
     const circle = createSvg("circle", {
-      class: `connector ${connector.end} ${connected ? "connected" : ""}`,
+      class: `connector ${connector.end}${connected ? " connected" : ""}${invalid ? " invalid" : ""}`,
       cx: point.x, cy: point.y, r: 0.24,
       "data-rail-id": rail.id, "data-connector-index": index
     });
@@ -1837,8 +1907,9 @@ function renderConnections() {
     if (draggingRailIds.has(aRail.id) || draggingRailIds.has(bRail.id)) return;
     const a = projectWorldPoint(worldConnector(aRail, connection.from.connector));
     const b = projectWorldPoint(worldConnector(bRail, connection.to.connector));
-    connectionLayer.appendChild(createSvg("line", { class: "connection-line", x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
-    connectionLayer.appendChild(createSvg("circle", { class: "connection-node", cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, r: .16 }));
+    const invalid = connectionHasInvalidState(connection);
+    connectionLayer.appendChild(createSvg("line", { class: `connection-line${invalid ? " invalid" : ""}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
+    connectionLayer.appendChild(createSvg("circle", { class: `connection-node${invalid ? " invalid" : ""}`, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, r: .16 }));
   });
 }
 
@@ -1902,6 +1973,20 @@ function setSelectedTrainColor(color) {
   render();
 }
 
+function setSelectedTrainSpeed(speed) {
+  const rail = railById(state.selectedRailId);
+  if (!rail || state.selectedRailIds.length !== 1 || PARTS[rail.part].type !== "train") return;
+  const nextSpeed = Number(speed);
+  if (!Number.isFinite(nextSpeed) || nextSpeed < TRAIN_SPEED_MIN || nextSpeed > TRAIN_SPEED_MAX) return;
+  const normalizedSpeed = Number(nextSpeed.toFixed(1));
+  if (trainSpeedForRail(rail) === normalizedSpeed && rail.speed === normalizedSpeed) return;
+  const historyBefore = layoutSnapshot();
+  rail.speed = normalizedSpeed;
+  pushHistoryIfChanged(historyBefore);
+  scheduleLayoutSave();
+  render();
+}
+
 function setSelectedText(text) {
   const rail = railById(state.selectedRailId);
   if (!rail || state.selectedRailIds.length !== 1 || PARTS[rail.part].type !== "text") return;
@@ -1920,9 +2005,12 @@ function switchStateLabel(stateName) {
 function renderInspector() {
   const rail = railById(state.selectedRailId);
   if (!rail) {
-    inspector.innerHTML = `<div class="no-selection">Select a rail to view<br />its properties</div>`;
+    inspectorNoSelection.hidden = false;
+    inspectorDetails.hidden = true;
     return;
   }
+  inspectorNoSelection.hidden = true;
+  inspectorDetails.hidden = false;
   const part = PARTS[rail.part];
   const definitions = switchDefinitions(rail.part);
   const switchControls = definitions.length && state.selectedRailIds.length === 1
@@ -1957,27 +2045,28 @@ function renderInspector() {
         </select>
       </div>`
     : "";
+  const trainSpeedControl = part.type === "train" && state.selectedRailIds.length === 1
+    ? `<div class="train-speed-control">
+        <label for="train-speed">Speed</label>
+        <div class="train-speed-input">
+          <input id="train-speed" data-action="set-train-speed" type="range" min="${TRAIN_SPEED_MIN}" max="${TRAIN_SPEED_MAX}" step="${TRAIN_SPEED_STEP}" value="${trainSpeedForRail(rail)}" />
+          <output for="train-speed">${trainSpeedForRail(rail).toFixed(1)}×</output>
+        </div>
+      </div>`
+    : "";
   const textControl = part.type === "text"
     ? `<div class="text-content-control">
         <label for="text-content">Text</label>
         <input id="text-content" data-action="set-text" type="text" value="${escapeHtml(rail.text || "")}" />
       </div>`
     : "";
-  inspector.innerHTML = `
-    <div class="property-title"><div class="property-name"><strong>${partLabel(rail.part)}</strong><small>id: ${rail.id}</small></div></div>
-    <div class="position-property">
-      <label>Position</label>
-      <output class="position-values">
-        <span>X ${snapPosition(rail.position[0])}</span>
-        <span>Y ${snapPosition(rail.position[1])}</span>
-        <span>Z ${rail.position[2]}</span>
-      </output>
-    </div>
-    <div class="inspector-row"><span>Rotation(deg):</span><output>${rail.rotation}</output></div>
-    <div class="flip-state">Flip: <strong>${rail.flip ? "ON" : "OFF"}</strong></div>
-    ${switchControls}
-    ${trainColorControl}
-    ${textControl}`;
+  inspectorPartName.textContent = partLabel(rail.part);
+  inspectorPartId.textContent = `id: ${rail.id}`;
+  inspectorPositionX.textContent = `X ${snapPosition(rail.position[0])}`;
+  inspectorPositionY.textContent = `Y ${snapPosition(rail.position[1])}`;
+  inspectorPositionZ.textContent = `Z ${rail.position[2]}`;
+  inspectorRotation.textContent = `${rail.rotation}°${rail.flip ? " (Flipped)" : ""}`;
+  inspectorDynamicControls.innerHTML = `${switchControls}${trainColorControl}${trainSpeedControl}${textControl}`;
 }
 
 function setSelectionMenuOpen(open) {
@@ -2095,7 +2184,11 @@ function fitLayout() {
 
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
-  viewState.zoom = BASE_VIEWBOX.width / width;
+  const fitZoom = Math.min(FIT_ZOOM_MAX, BASE_VIEWBOX.width / width);
+  const fitScale = BASE_VIEWBOX.width / fitZoom / width;
+  width *= fitScale;
+  height *= fitScale;
+  viewState.zoom = fitZoom;
   viewState.viewBox = {
     x: centerX - width / 2,
     y: centerY - height / 2,
@@ -2681,6 +2774,13 @@ document.addEventListener("paste", event => {
   pasteRailClipboardData(data);
 });
 
+document.addEventListener("input", event => {
+  const trainSpeedControl = event.target.closest?.("[data-action='set-train-speed']");
+  if (!trainSpeedControl) return;
+  const output = trainSpeedControl.parentElement?.querySelector("output");
+  if (output) output.textContent = `${Number(trainSpeedControl.value).toFixed(1)}×`;
+});
+
 document.addEventListener("change", event => {
   const speedControl = event.target.closest?.("[data-action='set-speed']");
   if (speedControl) {
@@ -2695,6 +2795,11 @@ document.addEventListener("change", event => {
   const colorControl = event.target.closest?.("[data-action='set-train-color']");
   if (colorControl) {
     setSelectedTrainColor(colorControl.value);
+    return;
+  }
+  const trainSpeedControl = event.target.closest?.("[data-action='set-train-speed']");
+  if (trainSpeedControl) {
+    setSelectedTrainSpeed(trainSpeedControl.value);
     return;
   }
   const textControl = event.target.closest?.("[data-action='set-text']");

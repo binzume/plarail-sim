@@ -4,6 +4,8 @@
   const PATH_SAMPLES = 24;
   const SPEED = 6;
   const SPEED_MULTIPLIERS = [1, 2, 4, 8, 16];
+  const TRAIN_SPEED_MIN = 0.4;
+  const TRAIN_SPEED_MAX = 2.0;
   const EPSILON = 0.0001;
 
   function distance(a, b) {
@@ -452,6 +454,34 @@
       }
     }
 
+    function trainSpeedMultiplier(state) {
+      const train = railById(state.id);
+      const speed = Number(train?.speed);
+      if (!Number.isFinite(speed)) return 1;
+      return Math.min(TRAIN_SPEED_MAX, Math.max(TRAIN_SPEED_MIN, speed));
+    }
+
+    function trainCollisionLength(state) {
+      const train = railById(state.id);
+      return parts()[train?.part]?.size?.[0] || 0;
+    }
+
+    function detectTrainCollisions() {
+      for (let firstIndex = 0; firstIndex < trainStates.length; firstIndex += 1) {
+        const first = trainStates[firstIndex];
+        if (!first.railId || first.pathIndex === null) continue;
+        for (let secondIndex = firstIndex + 1; secondIndex < trainStates.length; secondIndex += 1) {
+          const second = trainStates[secondIndex];
+          if (first.railId !== second.railId || first.pathIndex !== second.pathIndex) continue;
+          const collisionDistance = (trainCollisionLength(first) + trainCollisionLength(second)) / 2;
+          if (Math.abs(first.distanceAlong - second.distanceAlong) <= collisionDistance) {
+            first.status = "stopped";
+            second.status = "stopped";
+          }
+        }
+      }
+    }
+
     function frame() {
       return {
         elapsed: elapsedTime,
@@ -475,7 +505,11 @@
       const elapsed = Math.min(Math.max(0, timestamp - lastTimestamp) / 1000, 0.1);
       lastTimestamp = timestamp;
       elapsedTime += elapsed * speedMultiplier;
-      trainStates.forEach(state => advanceTrain(state, SPEED * elapsed * speedMultiplier));
+      trainStates.forEach(state => advanceTrain(
+        state,
+        SPEED * elapsed * speedMultiplier * trainSpeedMultiplier(state)
+      ));
+      detectTrainCollisions();
       emitFrame();
       animationFrame = global.requestAnimationFrame(tick);
     }
@@ -494,6 +528,7 @@
       trainStates = currentLayout.rails
         .filter(rail => parts()[rail.part]?.type === "train")
         .map(createTrainState);
+      detectTrainCollisions();
       playing = true;
       options.onStateChange?.(true);
       emitFrame();

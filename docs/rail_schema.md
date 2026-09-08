@@ -470,6 +470,20 @@ part = "switch"
 }
 ```
 
+`part` が `train` の場合は、列車ごとの速度倍率を `speed` として保持する。
+`speed` は 0.4〜2.0 の範囲で、1.0 が標準速度となる。
+
+```json
+{
+  "id": "train-001",
+  "part": "train",
+  "position": [100, 200, 0],
+  "rotation": 0,
+  "flip": false,
+  "speed": 1.2
+}
+```
+
 ## `position`
 
 ワールド座標。
