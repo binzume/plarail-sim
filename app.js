@@ -63,6 +63,7 @@ function textMetrics(value, part) {
 const ROUTE_MAX_CURVES = 7;
 const ROUTE_MAX_STRAIGHTS = 24;
 const ROUTE_PIECE_PENALTY = 5;
+const ROUTE_DISTANCE_PENALTY = ROUTE_PIECE_PENALTY / STRAIGHT_LENGTH;
 const ROUTE_DRAG_THRESHOLD = 0.35;
 const layout = {
   schemaVersion: 1,
@@ -1109,6 +1110,12 @@ function autoConnectDraggedSelection() {
   return true;
 }
 
+function updateDraggedConnections(drag, railIds, reconnect = null) {
+  if (drag.preserveConnections) return;
+  railIds.forEach(detachInvalidConnections);
+  reconnect?.();
+}
+
 function curvePathPoints(pathDefinition) {
   const radius = pathDefinition.radius ?? CURVE_RADIUS;
   const angle = (pathDefinition.angle ?? 45) * Math.PI / 180;
@@ -1558,7 +1565,7 @@ function buildBestRoute(startRef, targetPoint, targetRef) {
       );
       const straightPieceEquivalent = straightUnits / 4;
       const routePieceCount = curveCount + straightPieceEquivalent;
-      candidate.score = directionError + routePieceCount * ROUTE_PIECE_PENALTY;
+      candidate.score = directionError + routePieceCount * ROUTE_PIECE_PENALTY + candidate.distance * ROUTE_DISTANCE_PENALTY;
       if (!best || candidate.score < best.score - 0.0001) {
         best = candidate;
       }
@@ -1648,17 +1655,30 @@ function renderRoutePreview() {
 
 function beginRouteDrag(event, railId, connectorIndex) {
   if (event.button !== 0) return;
-  if (connectionFor(railId, connectorIndex)) return;
+  const startRef = { railId, connector: connectorIndex };
+  const existingConnection = connectionFor(railId, connectorIndex);
+  let forcedTargetRef = null;
+  if (existingConnection) {
+    const connectedRef = connectorRefsEqual(existingConnection.from, startRef)
+      ? existingConnection.to
+      : existingConnection.from;
+    const start = worldConnector(railById(startRef.railId), startRef.connector);
+    const target = worldConnector(railById(connectedRef.railId), connectedRef.connector);
+    const distance = Math.hypot(start.x - target.x, start.y - target.y);
+    if (distance <= SNAP_DISTANCE) return;
+    forcedTargetRef = { ...connectedRef };
+  }
   const point = svgPoint(event);
   state.justRouteDragged = false;
   state.routeDrag = {
-    startRef: { railId, connector: connectorIndex },
+    startRef,
     startPoint: { x: point.x, y: point.y },
     pointerPoint: { x: point.x, y: point.y },
     moved: false,
     targetRef: null,
+    forcedTargetRef,
     preview: null,
-    directConnect: event.ctrlKey || event.metaKey
+    directConnect: !forcedTargetRef && (event.ctrlKey || event.metaKey)
   };
   event.currentTarget.setPointerCapture?.(event.pointerId);
 }
@@ -1678,8 +1698,12 @@ function commitDirectConnection(routeDrag) {
 
 function commitRoute(routeDrag) {
   const route = routeDrag.preview;
-  if (!route || (!route.rails.length && !routeDrag.targetRef)) return false;
+  const connectionTargetRef = routeDrag.forcedTargetRef || routeDrag.targetRef;
+  if (!route || (!route.rails.length && !connectionTargetRef)) return false;
   const historyBefore = layoutSnapshot();
+  if (routeDrag.forcedTargetRef) {
+    removeConnectionBetween(routeDrag.startRef, routeDrag.forcedTargetRef);
+  }
   const idMap = new Map();
   const addedRails = route.rails.map(previewRail => {
     const rail = {
@@ -1697,8 +1721,8 @@ function commitRoute(routeDrag) {
   route.connections.forEach(connection => {
     layout.connections.push({ from: remap(connection.from), to: remap(connection.to) });
   });
-  if (routeDrag.targetRef) {
-    layout.connections.push({ from: remap(route.endpointRef), to: { ...routeDrag.targetRef } });
+  if (connectionTargetRef) {
+    layout.connections.push({ from: remap(route.endpointRef), to: { ...connectionTargetRef } });
   }
   if (addedRails.length) connectNearbyUnconnectedConnectors([remap(route.endpointRef).railId]);
   pushHistoryIfChanged(historyBefore);
@@ -1973,7 +1997,6 @@ function renderConnections() {
     const b = projectWorldPoint(worldConnector(bRail, connection.to.connector));
     const invalid = connectionHasInvalidState(connection);
     connectionLayer.appendChild(createSvg("line", { class: `connection-line${invalid ? " invalid" : ""}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
-    connectionLayer.appendChild(createSvg("circle", { class: `connection-node${invalid ? " invalid" : ""}`, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, r: .16 }));
   });
 }
 
@@ -2453,6 +2476,7 @@ function beginDrag(event, railId) {
     offsetY: rail.position[1] - dragPoint.y,
     moved: false,
     snapLock: null,
+    preserveConnections: event.ctrlKey || event.metaKey,
     historyBefore: layoutSnapshot()
   };
   event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -2522,8 +2546,10 @@ document.addEventListener("pointermove", event => {
 
     routeDrag.moved = true;
     routeDrag.pointerPoint = { x: displayPoint.x, y: displayPoint.y };
-    routeDrag.directConnect = event.ctrlKey || event.metaKey;
-    routeDrag.targetRef = findRouteTarget(displayPoint, routeDrag.startRef);
+    routeDrag.directConnect = !routeDrag.forcedTargetRef && (event.ctrlKey || event.metaKey);
+    routeDrag.targetRef = routeDrag.forcedTargetRef
+      ? null
+      : findRouteTarget(displayPoint, routeDrag.startRef);
     if (routeDrag.directConnect) {
       routeDrag.preview = null;
       renderRoutePreview();
@@ -2578,8 +2604,7 @@ document.addEventListener("pointermove", event => {
     }
 
     state.drag.moved = true;
-    state.drag.selectedRailIds.forEach(detachInvalidConnections);
-    autoConnectDraggedSelection();
+    updateDraggedConnections(state.drag, state.drag.selectedRailIds, autoConnectDraggedSelection);
     render();
     return;
   }
@@ -2624,8 +2649,7 @@ document.addEventListener("pointermove", event => {
   rail.position[0] = snapPosition(dragPoint.x + state.drag.offsetX);
   rail.position[1] = snapPosition(dragPoint.y + state.drag.offsetY);
   state.drag.moved = true;
-  detachInvalidConnections(rail.id);
-  autoConnectDraggedRail(rail, dragPoint);
+  updateDraggedConnections(state.drag, [rail.id], () => autoConnectDraggedRail(rail, dragPoint));
   render();
 });
 
@@ -2669,7 +2693,7 @@ document.addEventListener("pointerup", event => {
 
   if (state.routeDrag) {
     const routeDrag = state.routeDrag;
-    routeDrag.directConnect = event.ctrlKey || event.metaKey;
+    routeDrag.directConnect = !routeDrag.forcedTargetRef && (event.ctrlKey || event.metaKey);
     const committed = routeDrag.moved && (
       routeDrag.directConnect ? commitDirectConnection(routeDrag) : commitRoute(routeDrag)
     );
@@ -2689,7 +2713,7 @@ document.addEventListener("pointerup", event => {
   if (wasMoved) {
     if (fromPalette) state.justPaletteDragged = true;
     else state.justDragged = true;
-    draggedIds.forEach(id => detachInvalidConnections(id));
+    updateDraggedConnections(drag, draggedIds);
     if (!fromPalette) pushHistoryIfChanged(drag.historyBefore);
     scheduleLayoutSave();
     render();
@@ -2836,13 +2860,18 @@ document.addEventListener("click", event => {
   }
 });
 
-document.addEventListener("copy", event => {
-  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+function setSelectedRailClipboardData(event) {
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return false;
   const data = selectedRailClipboardData();
-  if (!data) return;
+  if (!data) return false;
   event.preventDefault();
   event.clipboardData.setData("text/plain", JSON.stringify(data, null, 2));
-});
+  return true;
+}
+
+document.addEventListener("copy", setSelectedRailClipboardData);
+
+document.addEventListener("cut", event => setSelectedRailClipboardData(event) && removeSelectedRail());
 
 document.addEventListener("paste", event => {
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;

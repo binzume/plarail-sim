@@ -167,8 +167,6 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .selection-box { fill: rgba(38, 103, 232, .08); stroke: var(--blue); stroke-width: .05; stroke-dasharray: .2 .14; opacity: .8; pointer-events: none; }
 .connection-line { stroke: #3f6fba; stroke-width: .16; stroke-dasharray: .22 .28; stroke-linecap: round; opacity: .8; pointer-events: none; }
 .connection-line.invalid { stroke: #d34b4b; }
-.connection-node { fill: #3f6fba; stroke: white; stroke-width: .08; pointer-events: none; }
-.connection-node.invalid { fill: #d34b4b; }
 .route-preview { opacity: .42; pointer-events: none; }
 .route-preview .rail-line { stroke: #5d8fe0; }
 .route-preview .rail-inner { stroke: #d1e0fa; }
