@@ -25,7 +25,7 @@ const WIDE_CURVE_45_ENDPOINT = [
 ];
 
 // Part definitions in canonical local coordinates. Placed values are stored in layout.rails.
-window.PARTS = {
+globalThis.PARTS = {
   "straight": {
     schemaVersion: 1,
     type: "rail",
@@ -280,6 +280,54 @@ window.PARTS = {
       default: "straight"
     }]
   },
+  "cross-point": {
+    schemaVersion: 1,
+    type: "rail",
+    id: "cross-point",
+    name: { ja: "交差ポイント", en: "Crossing Point" },
+    flippable: true,
+    iconViewBox: `-1 ${-(STRAIGHT_LENGTH / 2 + 1)} ${STRAIGHT_LENGTH + 2} ${STRAIGHT_LENGTH + 2}`,
+    connectors: [
+      { position: [0, 0, 0], direction: 180, end: "male" },
+      { position: [STRAIGHT_LENGTH, 0, 0], direction: 0, end: "female" },
+      { position: [STRAIGHT_LENGTH / 2, STRAIGHT_LENGTH / 2, 0], direction: 90, end: "female" },
+      { position: [STRAIGHT_LENGTH / 2, -STRAIGHT_LENGTH / 2, 0], direction: -90, end: "male" }
+    ],
+    paths: [
+      { from: 0, to: 1, shape: "straight" },
+      { from: 3, to: 2, shape: "straight" },
+      {
+        from: 1,
+        to: 3,
+        shape: "curve",
+        radius: STRAIGHT_LENGTH / 2,
+        angle: 90,
+        side: 1
+      },
+      {
+        from: 0,
+        to: 2,
+        shape: "curve",
+        radius: STRAIGHT_LENGTH / 2,
+        angle: 90,
+        side: 1
+      }
+    ],
+    switches: [
+      {
+        id: "point1",
+        connector: 0,
+        states: { straight: 0, branch: 3 },
+        default: "straight"
+      },
+      {
+        id: "point2",
+        connector: 1,
+        states: { straight: 1, branch: 2 },
+        default: "straight"
+      }
+    ]
+  },
   "u-turn": {
     schemaVersion: 1,
     type: "rail",
@@ -317,54 +365,6 @@ window.PARTS = {
         }
       ]
     }]
-  },
-  "cross-point": {
-    schemaVersion: 1,
-    type: "rail",
-    id: "cross-point",
-    name: { ja: "交差ポイント", en: "Crossing Point" },
-    flippable: true,
-    iconViewBox: `-1 ${-(STRAIGHT_LENGTH / 2 + 1)} ${STRAIGHT_LENGTH + 2} ${STRAIGHT_LENGTH + 2}`,
-    connectors: [
-      { position: [0, 0, 0], direction: 180, end: "male" },
-      { position: [STRAIGHT_LENGTH, 0, 0], direction: 0, end: "female" },
-      { position: [STRAIGHT_LENGTH / 2, STRAIGHT_LENGTH / 2, 0], direction: 90, end: "female" },
-      { position: [STRAIGHT_LENGTH / 2, -STRAIGHT_LENGTH / 2, 0], direction: -90, end: "male" }
-    ],
-    paths: [
-      { from: 0, to: 1, shape: "straight" },
-      { from: 3, to: 2, shape: "straight" },
-      {
-        from: 0,
-        to: 3,
-        shape: "curve",
-        radius: STRAIGHT_LENGTH / 2,
-        angle: 90,
-        side: -1
-      },
-      {
-        from: 1,
-        to: 2,
-        shape: "curve",
-        radius: STRAIGHT_LENGTH / 2,
-        angle: 90,
-        side: -1
-      }
-    ],
-    switches: [
-      {
-        id: "point1",
-        connector: 0,
-        states: { straight: 0, branch: 2 },
-        default: "straight"
-      },
-      {
-        id: "point2",
-        connector: 1,
-        states: { straight: 1, branch: 3 },
-        default: "straight"
-      }
-    ]
   },
   "text": {
     schemaVersion: 1,
