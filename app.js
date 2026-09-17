@@ -675,12 +675,87 @@ function escapeHtml(value) {
   }[character]));
 }
 
-function removeSelectedRail() {
+function singlePathEndpoints(rail) {
+  const paths = PARTS[rail.part]?.paths;
+  if (!Array.isArray(paths) || paths.length !== 1) return null;
+  const path = paths[0];
+  if (!Number.isInteger(path.from) || !Number.isInteger(path.to) || path.from === path.to) return null;
+  return [path.from, path.to];
+}
+
+function forcedConnectionEndpoint(startRef, removedRailsById) {
+  let current = { ...startRef };
+  const visited = new Set();
+
+  while (true) {
+    const currentKey = `${current.railId}:${current.connector}`;
+    if (visited.has(currentKey)) return null;
+    visited.add(currentKey);
+
+    const connection = connectionFor(current.railId, current.connector);
+    if (!connection) return null;
+    const currentRailRef = { railId: current.railId, connector: current.connector };
+    const connectedRef = connectorRefsEqual(connection.from, currentRailRef)
+      ? connection.to
+      : connection.from;
+    const connectedRail = removedRailsById.get(connectedRef.railId);
+    if (!connectedRail) return { ...connectedRef };
+
+    const endpoints = singlePathEndpoints(connectedRail);
+    if (!endpoints || !endpoints.includes(connectedRef.connector)) return null;
+    current = {
+      railId: connectedRail.id,
+      connector: endpoints[0] === connectedRef.connector ? endpoints[1] : endpoints[0]
+    };
+  }
+}
+
+function forcedConnectionsForRemovedRails(removedRails, removedIds) {
+  const forcedConnections = [];
+  const seen = new Set();
+  const removedRailsById = new Map(
+    removedRails.filter(rail => removedIds.has(rail.id)).map(rail => [rail.id, rail])
+  );
+
+  removedRails.forEach(rail => {
+    const endpoints = singlePathEndpoints(rail);
+    if (!endpoints) return;
+    const endpointRefs = endpoints.map(connectorIndex => forcedConnectionEndpoint(
+      { railId: rail.id, connector: connectorIndex },
+      removedRailsById
+    ));
+    const [first, second] = endpointRefs;
+    if (!first || !second || removedIds.has(first.railId) || removedIds.has(second.railId)) return;
+    if (connectorRefsEqual(first, second)) return;
+
+    const key = [
+      `${first.railId}:${first.connector}`,
+      `${second.railId}:${second.connector}`
+    ].sort().join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    forcedConnections.push({ from: { ...first }, to: { ...second } });
+  });
+
+  return forcedConnections;
+}
+
+function removeSelectedRail({ preserveConnections = false } = {}) {
   const ids = state.selectedRailIds.length ? state.selectedRailIds : (state.selectedRailId ? [state.selectedRailId] : []);
   if (!ids.length) return;
   const historyBefore = layoutSnapshot();
+  const removedIds = new Set(ids);
+  const removedRails = layout.rails.filter(rail => removedIds.has(rail.id));
+  const forcedConnections = preserveConnections
+    ? forcedConnectionsForRemovedRails(removedRails, removedIds)
+    : [];
   layout.rails = layout.rails.filter(rail => !ids.includes(rail.id));
   layout.connections = layout.connections.filter(connection => !ids.includes(connection.from.railId) && !ids.includes(connection.to.railId));
+  forcedConnections.forEach(connection => {
+    if (connectionFor(connection.from.railId, connection.from.connector) ||
+        connectionFor(connection.to.railId, connection.to.connector)) return;
+    layout.connections.push(connection);
+  });
   state.selectedRailId = null;
   state.selectedRailIds = [];
   pushHistoryIfChanged(historyBefore);
@@ -2807,7 +2882,7 @@ document.addEventListener("click", event => {
     }
     addRail(button.dataset.part);
   }
-  if (action === "delete") removeSelectedRail();
+  if (action === "delete") removeSelectedRail({ preserveConnections: event.ctrlKey || event.metaKey });
   if (action === "rotate-left") rotateSelected(-45);
   if (action === "rotate-right") rotateSelected(45);
   if (action === "flip") flipSelected();
@@ -2871,7 +2946,9 @@ function setSelectedRailClipboardData(event) {
 
 document.addEventListener("copy", setSelectedRailClipboardData);
 
-document.addEventListener("cut", event => setSelectedRailClipboardData(event) && removeSelectedRail());
+document.addEventListener("cut", event => setSelectedRailClipboardData(event) && removeSelectedRail({
+  preserveConnections: event.ctrlKey || event.metaKey
+}));
 
 document.addEventListener("paste", event => {
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
@@ -2950,7 +3027,10 @@ document.addEventListener("keydown", event => {
     redoLayout();
     return;
   }
-  if (event.key === "Delete" || event.key === "Backspace") { event.preventDefault(); removeSelectedRail(); }
+  if (event.key === "Delete" || event.key === "Backspace") {
+    event.preventDefault();
+    removeSelectedRail({ preserveConnections: modifier });
+  }
   if (key === "r") rotateSelected(event.shiftKey ? -45 : 45);
   if (key === "f") flipSelected();
   if (event.key === "Escape") render();
