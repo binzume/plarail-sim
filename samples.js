@@ -1,4 +1,4 @@
-window.SAMPLES = [
+globalThis.SAMPLES = [
   {
     "schemaVersion": 1,
     "metadata": {

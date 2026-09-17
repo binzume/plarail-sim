@@ -1,9 +1,10 @@
-/* Layout simulation engine. The editor provides the model and consumes frames. */
+/* Layout simulation engine. The caller provides the model and advances time. */
 (function attachLayoutSimulator(global) {
+  const layoutApi = global.Layout || (typeof require === "function" ? require("./layout.js") : null);
   const ATTACH_DISTANCE = 2.5;
   const PATH_SAMPLES = 24;
   const SPEED = 6;
-  const SPEED_MULTIPLIERS = [1, 2, 4, 8, 16];
+  const DEFAULT_MAX_STEP_DELTA_TIME = 0.1;
   const TRAIN_SPEED_MIN = 0.4;
   const TRAIN_SPEED_MAX = 2.0;
   const EPSILON = 0.0001;
@@ -16,8 +17,8 @@
     return ((angle % 360) + 360) % 360;
   }
 
-  function switchMode(rail) {
-    return rail.mode || "";
+  function switchMode(parts, rail) {
+    return layoutApi.getSwitchMode(parts, rail);
   }
 
   function transformPoint(point, rail, part) {
@@ -209,38 +210,33 @@
   }
 
   function createSimulator(options) {
+    const layout = options.layout;
+    const parts = options.parts;
+    const configuredMaxStepDeltaTime = Number(options.maxStepDeltaTime);
+    const maxStepDeltaTime = Number.isFinite(configuredMaxStepDeltaTime) && configuredMaxStepDeltaTime > 0
+      ? configuredMaxStepDeltaTime
+      : DEFAULT_MAX_STEP_DELTA_TIME;
     let playing = false;
-    let animationFrame = null;
-    let lastTimestamp = 0;
     let elapsedTime = 0;
-    let speedMultiplier = SPEED_MULTIPLIERS[0];
     let revision = 0;
     let trainStates = [];
     let initialSwitches = [];
 
-    function layout() {
-      return options.getLayout();
-    }
-
-    function parts() {
-      return options.getParts();
-    }
-
     function railById(id) {
-      return layout().rails.find(rail => rail.id === id);
+      return layout.rails.find(rail => rail.id === id);
     }
 
     function connectorWorld(rail, index) {
-      const connector = parts()[rail.part].connectors[index];
+      const connector = parts[rail.part].connectors[index];
       const direction = rail.flip ? 180 - connector.direction : connector.direction;
       return {
-        ...transformPoint(connector.position, rail, parts()[rail.part]),
+        ...transformPoint(connector.position, rail, parts[rail.part]),
         direction: normalizeAngle(direction + rail.rotation)
       };
     }
 
     function pathRecords(rail) {
-      const part = parts()[rail.part];
+      const part = parts[rail.part];
       return (part.paths || []).map((definition, index) => ({
         index,
         from: definition.from,
@@ -250,12 +246,10 @@
     }
 
     function activePathIndexes(rail) {
-      const definitions = parts()[rail.part].switches || [];
+      const definitions = layoutApi.getSwitchDefinitions(parts, rail.part);
       if (!definitions.length) return null;
       return new Set(definitions.map(definition => {
-        const state = Object.prototype.hasOwnProperty.call(definition.states, rail.states?.[definition.id])
-          ? rail.states[definition.id]
-          : definition.default;
+        const state = layoutApi.getSwitchState(parts, rail, definition.id);
         return definition.states[state];
       }));
     }
@@ -265,52 +259,56 @@
       return !active || active.has(pathIndex);
     }
 
-    function activatePath(rail, pathIndex) {
-      const definitions = parts()[rail.part].switches || [];
-      const states = { ...(rail.states || {}) };
+    function switchDefinitionForConnector(rail, connectorIndex) {
+      return layoutApi.getSwitchDefinitions(parts, rail.part)
+        .find(definition => definition.connector === connectorIndex) || null;
+    }
+
+    function pathTouchesConnector(path, connectorIndex) {
+      return path.from === connectorIndex || path.to === connectorIndex;
+    }
+
+    function setSwitchStateForPath(rail, definition, pathIndex) {
+      const stateEntry = Object.entries(definition.states)
+        .find(([, mappedPathIndex]) => mappedPathIndex === pathIndex);
+      if (!stateEntry) return false;
+      const [stateName] = stateEntry;
+      if (layoutApi.getSwitchState(parts, rail, definition.id) === stateName) return false;
+      rail.states = {
+        ...(rail.states || {}),
+        [definition.id]: stateName
+      };
+      return true;
+    }
+
+    function activatePath(rail, pathIndex, excludedSwitchId = null) {
+      const definitions = layoutApi.getSwitchDefinitions(parts, rail.part);
       let changed = false;
       definitions.forEach(definition => {
-        const stateEntry = Object.entries(definition.states)
-          .find(([, mappedPathIndex]) => mappedPathIndex === pathIndex);
-        if (!stateEntry || states[definition.id] === stateEntry[0]) return;
-        states[definition.id] = stateEntry[0];
-        changed = true;
+        if (definition.id === excludedSwitchId) return;
+        changed = setSwitchStateForPath(rail, definition, pathIndex) || changed;
       });
-      if (changed) {
-        rail.states = states;
-        revision += 1;
-      }
+      if (changed) revision += 1;
       return changed;
     }
 
-    function togglePath(rail, pathIndex) {
-      const definitions = parts()[rail.part].switches || [];
-      const states = { ...(rail.states || {}) };
-      let changed = false;
-      definitions.forEach(definition => {
-        const controlsPath = Object.values(definition.states).includes(pathIndex);
-        if (!controlsPath) return;
-        const stateNames = Object.keys(definition.states);
-        const currentState = Object.prototype.hasOwnProperty.call(definition.states, states[definition.id])
-          ? states[definition.id]
-          : definition.default;
-        const currentIndex = stateNames.indexOf(currentState);
-        const nextState = stateNames[(currentIndex + 1) % stateNames.length];
-        if (nextState && nextState !== currentState) {
-          states[definition.id] = nextState;
-          changed = true;
-        }
-      });
-      if (changed) {
-        rail.states = states;
-        revision += 1;
-      }
-      return changed;
+    function toggleSwitch(rail, definition) {
+      const stateNames = Object.keys(definition.states);
+      const currentState = layoutApi.getSwitchState(parts, rail, definition.id);
+      const currentIndex = stateNames.indexOf(currentState);
+      const nextState = stateNames[(currentIndex + 1) % stateNames.length];
+      if (!nextState || nextState === currentState) return false;
+      rail.states = {
+        ...(rail.states || {}),
+        [definition.id]: nextState
+      };
+      revision += 1;
+      return true;
     }
 
     function connectionMap() {
       const map = new Map();
-      layout().connections.forEach(connection => {
+      layout.connections.forEach(connection => {
         map.set(connectorKey(connection.from), connection.to);
         map.set(connectorKey(connection.to), connection.from);
       });
@@ -350,8 +348,8 @@
     function createTrainState(train) {
       const forward = trainForward(train);
       let best = null;
-      layout().rails.forEach(rail => {
-        const part = parts()[rail.part];
+      layout.rails.forEach(rail => {
+        const part = parts[rail.part];
         if (part.type !== "rail") return;
         pathRecords(rail).forEach(path => {
           if (!isPathActive(rail, path.index)) return;
@@ -387,7 +385,6 @@
         pathIndex: best.path.index,
         distanceAlong: best.nearest.along,
         direction,
-        autoSwitchAfterPass: Boolean(switchMode(best.rail) === "auto-switch" && direction > 0),
         position: [...train.position],
         rotation: train.rotation,
         flip: Boolean(train.flip),
@@ -437,32 +434,42 @@
       }
 
       const nextRail = railById(nextRef.railId);
-      if (!nextRail || parts()[nextRail.part].type !== "rail") {
+      if (!nextRail || parts[nextRail.part].type !== "rail") {
         state.status = "stopped";
         return false;
       }
       const nextPaths = pathRecords(nextRail);
-      const incomingBranchPath = nextPaths.find(path =>
-        path.to === nextRef.connector && !isPathActive(nextRail, path.index)
-      );
-      if (incomingBranchPath && switchMode(nextRail) === "") activatePath(nextRail, incomingBranchPath.index);
-      const nextPath = nextPaths.find(path =>
-        ((switchMode(nextRail) !== "" && path.to === nextRef.connector) || isPathActive(nextRail, path.index)) &&
-        (path.from === nextRef.connector || path.to === nextRef.connector)
-      );
+      const entrySwitch = switchDefinitionForConnector(nextRail, nextRef.connector);
+      const selectedPathIndex = entrySwitch
+        ? entrySwitch.states[layoutApi.getSwitchState(parts, nextRail, entrySwitch.id)]
+        : null;
+      const selectedPath = selectedPathIndex === null
+        ? null
+        : nextPaths.find(path => path.index === selectedPathIndex);
+      const nextPath = selectedPath && pathTouchesConnector(selectedPath, nextRef.connector)
+        ? selectedPath
+        : nextPaths.find(path =>
+          pathTouchesConnector(path, nextRef.connector) && isPathActive(nextRail, path.index)
+        ) || nextPaths.find(path =>
+          path.to === nextRef.connector
+        );
       if (!nextPath) {
         state.status = "stopped";
         updateTrainVisual(state);
         return false;
       }
 
+      if (switchMode(parts, nextRail) !== "fixed") {
+        activatePath(nextRail, nextPath.index, entrySwitch?.id || null);
+      }
+      if (switchMode(parts, nextRail) === "auto-switch" && entrySwitch) {
+        toggleSwitch(nextRail, entrySwitch);
+      }
+
       state.railId = nextRail.id;
       state.pathIndex = nextPath.index;
       state.direction = nextPath.from === nextRef.connector ? 1 : -1;
       state.distanceAlong = state.direction > 0 ? 0 : nextPath.length;
-      state.autoSwitchAfterPass = Boolean(
-        switchMode(nextRail) === "auto-switch" && nextPath.from === nextRef.connector
-      );
       return true;
     }
 
@@ -487,10 +494,6 @@
         state.distanceAlong = state.direction > 0 ? path.length : 0;
         updateTrainVisual(state);
         remaining -= Math.max(available, 0);
-        if (state.autoSwitchAfterPass) {
-          togglePath(rail, path.index);
-          state.autoSwitchAfterPass = false;
-        }
         if (!transitionToNextPath(state)) break;
         updateTrainVisual(state);
       }
@@ -505,7 +508,7 @@
 
     function trainCollisionLength(state) {
       const train = railById(state.id);
-      return parts()[train?.part]?.size?.[0] || 0;
+      return parts[train?.part]?.size?.[0] || 0;
     }
 
     function detectTrainCollisions() {
@@ -527,7 +530,6 @@
     function frame() {
       return {
         elapsed: elapsedTime,
-        speed: speedMultiplier,
         revision,
         trains: Object.fromEntries(trainStates.map(state => [state.id, {
           position: [...state.position],
@@ -538,75 +540,71 @@
       };
     }
 
-    function emitFrame() {
-      options.onFrame?.(frame());
-    }
-
-    function tick(timestamp) {
-      if (!playing) return;
-      const elapsed = Math.min(Math.max(0, timestamp - lastTimestamp) / 1000, 0.1);
-      lastTimestamp = timestamp;
-      elapsedTime += elapsed * speedMultiplier;
-      trainStates.forEach(state => advanceTrain(
-        state,
-        SPEED * elapsed * speedMultiplier * trainSpeedMultiplier(state)
-      ));
-      detectTrainCollisions();
-      emitFrame();
-      animationFrame = global.requestAnimationFrame(tick);
+    function update(deltaTime) {
+      if (!playing) return null;
+      const requestedElapsed = Number(deltaTime);
+      let remaining = Number.isFinite(requestedElapsed)
+        ? Math.max(0, requestedElapsed)
+        : 0;
+      while (remaining > EPSILON) {
+        const elapsed = Math.min(remaining, maxStepDeltaTime);
+        elapsedTime += elapsed;
+        trainStates.forEach(state => advanceTrain(
+          state,
+          SPEED * elapsed * trainSpeedMultiplier(state)
+        ));
+        detectTrainCollisions();
+        remaining -= elapsed;
+      }
+      return frame();
     }
 
     function start() {
       if (playing) return false;
       elapsedTime = 0;
-      const currentLayout = layout();
+      const currentLayout = layout;
       initialSwitches = currentLayout.rails
-        .filter(rail => (parts()[rail.part]?.switches || []).length)
+        .filter(rail => (parts[rail.part]?.switches || []).length)
         .map(rail => ({
           id: rail.id,
           hadStates: Object.prototype.hasOwnProperty.call(rail, "states"),
           states: { ...(rail.states || {}) }
         }));
       trainStates = currentLayout.rails
-        .filter(rail => parts()[rail.part]?.type === "train")
+        .filter(rail => parts[rail.part]?.type === "train")
         .map(createTrainState);
       detectTrainCollisions();
       playing = true;
       options.onStateChange?.(true);
-      emitFrame();
-      lastTimestamp = global.performance.now();
-      animationFrame = global.requestAnimationFrame(tick);
       return true;
     }
 
-    function stop() {
-      if (!playing) return [];
-      playing = false;
-      if (animationFrame !== null) global.cancelAnimationFrame(animationFrame);
-      animationFrame = null;
-      trainStates = [];
-      options.onFrame?.(null);
-      options.onStateChange?.(false);
-      const snapshot = initialSwitches;
+    function reset() {
+      if (playing) {
+        playing = false;
+        trainStates = [];
+        options.onStateChange?.(false);
+      }
+      initialSwitches.forEach(snapshot => {
+        const rail = railById(snapshot.id);
+        if (!rail) return;
+        if (snapshot.hadStates) rail.states = { ...snapshot.states };
+        else delete rail.states;
+      });
       initialSwitches = [];
-      return snapshot;
-    }
-
-    function setSpeed(multiplier) {
-      const nextSpeed = Number(multiplier);
-      if (!playing || !SPEED_MULTIPLIERS.includes(nextSpeed)) return speedMultiplier;
-      speedMultiplier = nextSpeed;
-      emitFrame();
-      return speedMultiplier;
     }
 
     return {
       start,
-      stop,
-      setSpeed,
+      reset,
+      update,
       isPlaying: () => playing
     };
   }
 
-  global.createLayoutSimulator = createSimulator;
-})(window);
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = { createLayoutSimulator: createSimulator };
+  } else {
+    global.createLayoutSimulator = createSimulator;
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this);

@@ -14,29 +14,44 @@ const TRAIN_SPEED_MIN = 0.4;
 const TRAIN_SPEED_MAX = 2.0;
 const TRAIN_SPEED_STEP = 0.1;
 const TRAIN_SPEED_DEFAULT = 1.0;
-const PARTS = window.PARTS;
+const PARTS = globalThis.PARTS;
+const Layout = globalThis.Layout;
+const normalizeAngle = Layout.normalizeAngle;
+const angleDifference = Layout.angleDifference;
+const transformPoint = Layout.transformPoint;
+const transformDirection = (direction, rail) => Layout.transformDirection(direction, rail);
+const cloneConnection = Layout.cloneConnection;
+const roundCoordinate = Layout.roundCoordinate;
+const SUPPORTED_PART_TYPES = Layout.SUPPORTED_PART_TYPES;
 // samples.js is optional; an unavailable or invalid sample bundle means no sample entries.
-const SAMPLES = Array.isArray(window.SAMPLES) ? window.SAMPLES : [];
-const SWITCH_MODES = ["", "auto-switch", "fixed"];
+const SAMPLES = Array.isArray(globalThis.SAMPLES) ? globalThis.SAMPLES : [];
+const SWITCH_MODES = Layout.SWITCH_MODES;
 const SWITCH_MARKER_INSET = 1.44;
 const SWITCH_MARKER_LENGTH = 1.72;
 const SWITCH_MARKER_WIDTH = 0.56;
 
-function isRailPart(partId) {
-  return PARTS[partId]?.type === "rail";
+function isSupportedPart(partId) {
+  return SUPPORTED_PART_TYPES.includes(PARTS[partId]?.type);
 }
 
-function isPlaceablePart(partId) {
-  return isRailPart(partId) || ["train", "text"].includes(PARTS[partId]?.type);
+function switchDefinitions(partId) {
+  return Layout.getSwitchDefinitions(PARTS, partId);
+}
+
+function switchDefinitionForRail(rail, switchId) {
+  return Layout.getSwitchDefinition(PARTS, rail, switchId);
+}
+
+function switchStateForRail(rail, switchId) {
+  return Layout.getSwitchState(PARTS, rail, switchId);
+}
+
+function switchStatesForRail(rail) {
+  return Layout.getSwitchStates(PARTS, rail);
 }
 
 function switchModeForRail(rail) {
-  return SWITCH_MODES.includes(rail.mode) ? rail.mode : "";
-}
-
-function storedSwitchMode(rail) {
-  const mode = switchModeForRail(rail);
-  return switchDefinitions(rail.part).length > 0 && mode ? { mode } : {};
+  return Layout.getSwitchMode(PARTS, rail);
 }
 
 function trainColorForRail(rail) {
@@ -50,6 +65,61 @@ function trainSpeedForRail(rail) {
   const speed = Number(rail?.speed);
   if (!Number.isFinite(speed)) return TRAIN_SPEED_DEFAULT;
   return Number(Math.min(TRAIN_SPEED_MAX, Math.max(TRAIN_SPEED_MIN, speed)).toFixed(1));
+}
+
+function isValidRailData(rail, knownIds = null) {
+  return Layout.isValidRailData(PARTS, rail, knownIds);
+}
+
+function isValidConnectionData(connection, railsById) {
+  return Layout.isValidConnectionData(PARTS, connection, railsById);
+}
+
+function normalizeLayout(savedLayout) {
+  return Layout.normalizeLayout(PARTS, layout.schemaVersion, savedLayout, {
+    normalizeInstance: (rail, part) => part?.type === "train"
+      ? {
+        color: trainColorForRail(rail),
+        speed: trainSpeedForRail(rail)
+      }
+      : {}
+  });
+}
+
+function projectWorldPoint(point) {
+  return Layout.projectWorldPoint(point, HEIGHT_DISPLAY_SCALE);
+}
+
+function logicalPointAtHeight(point, z) {
+  return Layout.logicalPointAtHeight(point, z, HEIGHT_DISPLAY_SCALE);
+}
+
+function worldConnector(rail, connectorIndex) {
+  return Layout.worldConnector(PARTS, rail, connectorIndex);
+}
+
+function averageConnectorHeight(rail) {
+  return Layout.averageConnectorHeight(PARTS, rail);
+}
+
+function connectionFor(railId, connectorIndex) {
+  return Layout.connectionFor(layout, railId, connectorIndex);
+}
+
+function isWithinSnapLimits(aConnector, bConnector) {
+  return Layout.isWithinSnapLimits(aConnector, bConnector, SNAP_DISTANCE, ANGLE_TOLERANCE);
+}
+
+function isConnectionValid(aRef, bRef, checkEnd = true) {
+  return Layout.isConnectionValid(PARTS, layout, aRef, bRef, SNAP_DISTANCE, ANGLE_TOLERANCE, checkEnd);
+}
+
+function connectorRefsEqual(a, b) {
+  return Layout.connectorRefsEqual(a, b);
+}
+
+function removeConnectionBetween(first, second) {
+  return Layout.removeConnectionBetween(layout, first, second);
 }
 
 function textMetrics(value, part) {
@@ -123,22 +193,13 @@ const shortcutOverlay = document.querySelector("#shortcut-overlay");
 const shortcutCloseButton = shortcutOverlay.querySelector("[data-action='close-shortcuts']");
 let simulationFrame = null;
 let lastRenderedSimulationRevision = null;
+let simulationFrameRequest = null;
+let simulationLastTimestamp = null;
+let simulationSpeedMultiplier = 1;
 
-const simulator = window.createLayoutSimulator({
-  getLayout: () => layout,
-  getParts: () => PARTS,
-  onFrame: frame => {
-    simulationFrame = frame;
-    if (frame) {
-      simulationTimeValue.textContent = formatSimulationTime(frame.elapsed);
-      simulationSpeedSelect.value = String(frame.speed);
-    } else {
-      simulationTimeValue.textContent = "00:00";
-    }
-    const updateInspector = !frame || frame.revision !== lastRenderedSimulationRevision;
-    render(updateInspector);
-    lastRenderedSimulationRevision = frame ? frame.revision : null;
-  },
+const simulator = globalThis.createLayoutSimulator({
+  layout,
+  parts: PARTS,
   onStateChange: playing => {
     playButton.textContent = playing ? "■" : "▶";
     playButton.title = playing ? "停止" : "再生";
@@ -146,6 +207,33 @@ const simulator = window.createLayoutSimulator({
     simulationPanel.hidden = !playing;
   }
 });
+
+function applySimulationFrame(frame) {
+  simulationFrame = frame;
+  if (frame) {
+    simulationTimeValue.textContent = formatSimulationTime(frame.elapsed);
+    simulationSpeedSelect.value = String(simulationSpeedMultiplier);
+  } else {
+    simulationTimeValue.textContent = "00:00";
+  }
+  const updateInspector = !frame || frame.revision !== lastRenderedSimulationRevision;
+  render(updateInspector);
+  lastRenderedSimulationRevision = frame ? frame.revision : null;
+}
+
+function requestSimulationFrame() {
+  if (!simulator.isPlaying()) return;
+  simulationFrameRequest = window.requestAnimationFrame(timestamp => {
+    simulationFrameRequest = null;
+    if (!simulator.isPlaying()) return;
+    const wallDeltaTime = simulationLastTimestamp === null
+      ? 0
+      : Math.max(0, (timestamp - simulationLastTimestamp) / 1000);
+    simulationLastTimestamp = timestamp;
+    applySimulationFrame(simulator.update(wallDeltaTime * simulationSpeedMultiplier));
+    requestSimulationFrame();
+  });
+}
 
 function formatSimulationTime(seconds) {
   const totalSeconds = Math.floor(seconds || 0);
@@ -166,13 +254,12 @@ function displayedPartInstance(partInstance) {
 }
 
 function stopSimulation() {
-  const initialSwitches = simulator.stop();
-  initialSwitches.forEach(snapshot => {
-    const rail = railById(snapshot.id);
-    if (!rail) return;
-    if (snapshot.hadStates) rail.states = { ...snapshot.states };
-    else delete rail.states;
-  });
+  if (simulationFrameRequest !== null) {
+    window.cancelAnimationFrame(simulationFrameRequest);
+    simulationFrameRequest = null;
+  }
+  simulationLastTimestamp = null;
+  simulator.reset();
   simulationFrame = null;
   render();
 }
@@ -181,7 +268,11 @@ function toggleSimulation() {
   if (simulator.isPlaying()) stopSimulation();
   else {
     flushLayoutSave();
-    simulator.start();
+    if (simulator.start()) {
+      simulationLastTimestamp = null;
+      applySimulationFrame(simulator.update(0));
+      requestSimulationFrame();
+    }
   }
 }
 
@@ -243,9 +334,10 @@ function layoutSnapshot() {
     },
     rails: layout.rails.map(rail => {
       const { mode, ...railData } = rail;
+      const storedMode = switchModeForRail(rail);
       return {
         ...railData,
-        ...storedSwitchMode(rail),
+        ...(storedMode ? { mode: storedMode } : {}),
         position: rail.position.map(roundCoordinate),
         ...(rail.states ? { states: { ...rail.states } } : {})
       };
@@ -321,78 +413,6 @@ function redoLayout() {
     return;
   }
   history.undo.push(current);
-}
-
-function cloneConnection(connection, railIdMap = null) {
-  const cloneRef = ref => ({
-    ...ref,
-    ...(railIdMap ? { railId: railIdMap.get(ref.railId) } : {})
-  });
-  return { from: cloneRef(connection.from), to: cloneRef(connection.to) };
-}
-
-function roundCoordinate(value) {
-  return Number(value.toFixed(3));
-}
-
-function isValidRailData(rail, knownIds = null) {
-  return rail && typeof rail.id === "string" && !knownIds?.has(rail.id) &&
-    isPlaceablePart(rail.part) && Array.isArray(rail.position) && rail.position.length >= 3 &&
-    rail.position.slice(0, 3).every(Number.isFinite) && Number.isFinite(rail.rotation);
-}
-
-function isValidConnectionData(connection, railsById) {
-  if (!connection?.from || !connection?.to) return false;
-  const { from, to } = connection;
-  const fromRail = railsById.get(from.railId);
-  const toRail = railsById.get(to.railId);
-  const fromConnectors = PARTS[fromRail?.part]?.connectors || [];
-  const toConnectors = PARTS[toRail?.part]?.connectors || [];
-  return fromRail && toRail && from.railId !== to.railId &&
-    Number.isInteger(from.connector) && Number.isInteger(to.connector) &&
-    fromConnectors[from.connector] && toConnectors[to.connector];
-}
-
-function normalizeLayout(savedLayout) {
-  if (!savedLayout || savedLayout.schemaVersion !== layout.schemaVersion || !Array.isArray(savedLayout.rails)) return null;
-  const usedIds = new Set();
-  const rails = savedLayout.rails.filter(rail => {
-    if (!isValidRailData(rail, usedIds)) return false;
-    usedIds.add(rail.id);
-    return true;
-  }).map(rail => {
-    const switchStates = switchStatesForRail(rail);
-    return {
-      id: rail.id,
-      part: rail.part,
-      position: rail.position.slice(0, 3).map(roundCoordinate),
-      rotation: rail.rotation,
-      flip: Boolean(rail.flip),
-      ...storedSwitchMode(rail),
-      ...(PARTS[rail.part].type === "train" ? { color: trainColorForRail(rail) } : {}),
-      ...(PARTS[rail.part].type === "train" ? { speed: trainSpeedForRail(rail) } : {}),
-      ...(PARTS[rail.part].type === "text" ? { text: typeof rail.text === "string" ? rail.text : "" } : {}),
-      ...(Object.keys(switchStates).length ? { states: switchStates } : {})
-    };
-  });
-  const railsById = new Map(rails.map(rail => [rail.id, rail]));
-  const connections = Array.isArray(savedLayout.connections)
-    ? savedLayout.connections
-      .filter(connection => isValidConnectionData(connection, railsById))
-      .map(connection => cloneConnection(connection))
-    : [];
-  const metadata = savedLayout.metadata && typeof savedLayout.metadata === "object"
-    ? savedLayout.metadata
-    : {};
-  return {
-    schemaVersion: layout.schemaVersion,
-    metadata: {
-      title: typeof metadata.title === "string" ? metadata.title : "",
-      updatedAt: typeof metadata.updatedAt === "string" ? metadata.updatedAt : null
-    },
-    rails,
-    connections
-  };
 }
 
 function restoreLayout(savedLayout) {
@@ -512,93 +532,12 @@ function createSvg(tag, attributes = {}) {
   return node;
 }
 
-function normalizeAngle(angle) {
-  return ((angle % 360) + 360) % 360;
-}
-
 function snapPosition(value) {
   return Math.round(value / POSITION_STEP) * POSITION_STEP;
 }
 
-function angleDifference(a, b) {
-  const difference = Math.abs(normalizeAngle(a) - normalizeAngle(b));
-  return Math.min(difference, 360 - difference);
-}
-
-function transformPoint(point, rail) {
-  let [x, y, z] = point;
-  if (rail.flip) {
-    x = -x;
-    z = -z;
-  }
-  const radians = rail.rotation * Math.PI / 180;
-  return {
-    x: rail.position[0] + x * Math.cos(radians) - y * Math.sin(radians),
-    y: rail.position[1] + x * Math.sin(radians) + y * Math.cos(radians),
-    z: rail.position[2] + z
-  };
-}
-
-function projectWorldPoint(point) {
-  return {
-    ...point,
-    y: point.y - point.z * HEIGHT_DISPLAY_SCALE
-  };
-}
-
-function logicalPointAtHeight(point, z) {
-  return {
-    x: point.x,
-    y: point.y + z * HEIGHT_DISPLAY_SCALE
-  };
-}
-
-function transformDirection(direction, rail) {
-  const flipped = rail.flip ? 180 - direction : direction;
-  return normalizeAngle(flipped + rail.rotation);
-}
-
-function worldConnector(rail, connectorIndex) {
-  const connector = PARTS[rail.part].connectors[connectorIndex];
-  return {
-    ...transformPoint(connector.position, rail),
-    direction: transformDirection(connector.direction, rail),
-    end: connector.end,
-    railId: rail.id,
-    connector: connectorIndex
-  };
-}
-
-function averageConnectorHeight(rail) {
-  const connectors = PARTS[rail.part]?.connectors || [];
-  if (!connectors.length) return rail.position[2];
-  return connectors.reduce((sum, connector, index) => sum + worldConnector(rail, index).z, 0) / connectors.length;
-}
-
 function railById(id) {
   return layout.rails.find(rail => rail.id === id);
-}
-
-function switchDefinitions(partId) {
-  return PARTS[partId]?.switches || [];
-}
-
-function switchStateForRail(rail, switchId) {
-  const definition = switchDefinitions(rail.part).find(item => item.id === switchId);
-  if (!definition) return null;
-  const state = rail.states?.[switchId];
-  return Object.prototype.hasOwnProperty.call(definition.states, state)
-    ? state
-    : definition.default;
-}
-
-function switchStatesForRail(rail) {
-  return Object.fromEntries(
-    switchDefinitions(rail.part).map(definition => [
-      definition.id,
-      switchStateForRail(rail, definition.id)
-    ])
-  );
 }
 
 function switchDestinationConnectorIndex(rail, definition) {
@@ -608,13 +547,6 @@ function switchDestinationConnectorIndex(rail, definition) {
   if (path.from === definition.connector) return path.to;
   if (path.to === definition.connector) return path.from;
   return null;
-}
-
-function connectionFor(railId, connectorIndex) {
-  return layout.connections.find(connection =>
-    (connection.from.railId === railId && connection.from.connector === connectorIndex) ||
-    (connection.to.railId === railId && connection.to.connector === connectorIndex)
-  );
 }
 
 function nextId() {
@@ -629,7 +561,7 @@ function centeredOrder(index) {
 }
 
 function addRail(partId, dropPoint = null) {
-  if (!isPlaceablePart(partId)) return null;
+  if (!isSupportedPart(partId)) return null;
   const historyBefore = layoutSnapshot();
   const index = layout.rails.length;
   const position = dropPoint
@@ -805,13 +737,14 @@ function pasteRailClipboardData(data) {
   const idMap = new Map();
   const pastedRails = data.rails.map(sourceRail => {
     const switchStates = switchStatesForRail(sourceRail);
+    const storedMode = switchModeForRail(sourceRail);
     const rail = {
       id: nextId(),
       part: sourceRail.part,
       position: [sourceRail.position[0] + 2, sourceRail.position[1] + 2, sourceRail.position[2]],
       rotation: sourceRail.rotation,
       flip: Boolean(sourceRail.flip),
-      ...storedSwitchMode(sourceRail),
+      ...(storedMode ? { mode: storedMode } : {}),
       ...(PARTS[sourceRail.part].type === "train" ? { color: trainColorForRail(sourceRail) } : {}),
       ...(PARTS[sourceRail.part].type === "train" ? { speed: trainSpeedForRail(sourceRail) } : {}),
       ...(PARTS[sourceRail.part].type === "text" ? { text: typeof sourceRail.text === "string" ? sourceRail.text : "" } : {}),
@@ -882,58 +815,18 @@ function detachInvalidConnections(railId) {
   const connectionCount = layout.connections.length;
   layout.connections = layout.connections.filter(connection => {
     if (connection.from.railId !== railId && connection.to.railId !== railId) return true;
-    return isConnectionValid(connection.from, connection.to);
+    // A snapped connection may intentionally join the same connector end.
+    // Keep that connection and let the renderer mark it as invalid; only
+    // detach when the rails are no longer geometrically aligned.
+    return isConnectionValid(connection.from, connection.to, false);
   });
   if (layout.connections.length !== connectionCount) resetConnectedGroupHeight(railId);
-}
-
-function isConnectionValid(aRef, bRef) {
-  const a = railById(aRef.railId);
-  const b = railById(bRef.railId);
-  if (!a || !b || a.id === b.id) return false;
-  const aConnector = worldConnector(a, aRef.connector);
-  const bConnector = worldConnector(b, bRef.connector);
-  return isWithinSnapLimits(aConnector, bConnector);
-}
-
-function isWithinSnapLimits(aConnector, bConnector) {
-  const distance = Math.hypot(aConnector.x - bConnector.x, aConnector.y - bConnector.y);
-  return distance <= SNAP_DISTANCE &&
-    Math.abs(aConnector.z - bConnector.z) <= 1 &&
-    angleDifference(aConnector.direction, bConnector.direction + 180) <= ANGLE_TOLERANCE;
-}
-
-function isConnectionInvalid(aRef, bRef) {
-  const a = railById(aRef.railId);
-  const b = railById(bRef.railId);
-  if (!a || !b || a.id === b.id) return true;
-  const aConnector = worldConnector(a, aRef.connector);
-  const bConnector = worldConnector(b, bRef.connector);
-  return aConnector.end === bConnector.end || !isWithinSnapLimits(aConnector, bConnector);
-}
-
-function connectionHasInvalidState(connection) {
-  return isConnectionInvalid(connection.from, connection.to);
-}
-
-function connectorRefsEqual(a, b) {
-  return a && b && a.railId === b.railId && a.connector === b.connector;
-}
-
-function removeConnectionBetween(first, second) {
-  const connectionCount = layout.connections.length;
-  layout.connections = layout.connections.filter(connection => {
-    const sameDirection = connectorRefsEqual(connection.from, first) && connectorRefsEqual(connection.to, second);
-    const reverseDirection = connectorRefsEqual(connection.from, second) && connectorRefsEqual(connection.to, first);
-    return !sameDirection && !reverseDirection;
-  });
-  return layout.connections.length !== connectionCount;
 }
 
 function connectNearbyUnconnectedConnectors(movingRailIds) {
   const connections = [];
   let best;
-  while ((best = findBestNearbyConnection(movingRailIds, (moving, anchor) => isConnectionValid(moving, anchor)))) {
+  while ((best = findBestNearbyConnection(movingRailIds, (moving, anchor) => isConnectionValid(moving, anchor, false)))) {
     layout.connections.push({ from: { ...best.anchor }, to: { ...best.moving } });
     connections.push({ anchor: { ...best.anchor }, moving: { ...best.moving } });
   }
@@ -950,16 +843,7 @@ function removeSnapConnections(snapLock) {
 }
 
 function snapRailToConnector(anchorRail, anchorIndex, movingRail, movingIndex) {
-  const anchor = worldConnector(anchorRail, anchorIndex);
-  const movingBaseDirection = transformDirection(PARTS[movingRail.part].connectors[movingIndex].direction, movingRail);
-  const desiredDirection = normalizeAngle(anchor.direction + 180);
-  let rotationDelta = normalizeAngle(desiredDirection - movingBaseDirection);
-  if (rotationDelta > 180) rotationDelta -= 360;
-  movingRail.rotation = normalizeAngle(movingRail.rotation + rotationDelta);
-  const afterRotation = worldConnector(movingRail, movingIndex);
-  movingRail.position[0] += anchor.x - afterRotation.x;
-  movingRail.position[1] += anchor.y - afterRotation.y;
-  movingRail.position[2] = anchor.z - (afterRotation.z - movingRail.position[2]);
+  Layout.snapRailToConnector(PARTS, anchorRail, anchorIndex, movingRail, movingIndex);
 }
 
 function connectAllPossible() {
@@ -976,7 +860,7 @@ function connectAllPossible() {
           PARTS[secondRail.part].connectors.forEach((secondConnector, secondIndex) => {
             const second = { railId: secondRail.id, connector: secondIndex };
             if (connectionFor(second.railId, second.connector)) return;
-            if (!isConnectionValid(first, second)) return;
+            if (!isConnectionValid(first, second, false)) return;
 
             const firstWorld = worldConnector(firstRail, firstIndex);
             const secondWorld = worldConnector(secondRail, secondIndex);
@@ -1002,55 +886,8 @@ function connectAllPossible() {
 }
 
 function alignConnectedRails() {
-  const root = railById(state.selectedRailId);
-  if (!root) return;
-
   const historyBefore = layoutSnapshot();
-  const fixedRailIds = new Set([root.id]);
-  const pendingFrames = [{
-    railId: root.id,
-    connections: layout.connections.filter(connection =>
-      connection.from.railId === root.id || connection.to.railId === root.id
-    ),
-    index: 0
-  }];
-
-  while (pendingFrames.length) {
-    const frame = pendingFrames.at(-1);
-    if (frame.index >= frame.connections.length) {
-      pendingFrames.pop();
-      continue;
-    }
-
-    const connection = frame.connections[frame.index++];
-    const currentRailId = frame.railId;
-    const currentRail = railById(currentRailId);
-    if (!currentRail) continue;
-
-    const currentRef = connection.from.railId === currentRailId
-      ? connection.from
-      : connection.to;
-    const neighborRef = connection.from.railId === currentRailId
-      ? connection.to
-      : connection.from;
-    const neighborRail = railById(neighborRef.railId);
-    if (!neighborRail || fixedRailIds.has(neighborRail.id)) continue;
-
-    snapRailToConnector(
-      currentRail,
-      currentRef.connector,
-      neighborRail,
-      neighborRef.connector
-    );
-    fixedRailIds.add(neighborRail.id);
-    pendingFrames.push({
-      railId: neighborRail.id,
-      connections: layout.connections.filter(item =>
-        item.from.railId === neighborRail.id || item.to.railId === neighborRail.id
-      ),
-      index: 0
-    });
-  }
+  Layout.alignConnectedRails(PARTS, layout, state.selectedRailId);
 
   if (JSON.stringify(historyBefore) === JSON.stringify(layoutSnapshot())) return;
   pushHistoryIfChanged(historyBefore);
@@ -1424,7 +1261,7 @@ function partIconViewBox(partId) {
 function renderPartButtons() {
   const partList = document.querySelector("#part-list");
   partList.replaceChildren();
-  Object.values(PARTS).filter(part => isPlaceablePart(part.id)).forEach(part => {
+  Object.values(PARTS).filter(part => isSupportedPart(part.id)).forEach(part => {
     const button = document.createElement("button");
     button.className = "part-button";
     button.dataset.action = "add";
@@ -1685,7 +1522,7 @@ function renderRoutePreview() {
       y2: end.y
     }));
     if (routeDrag.targetRef) {
-      const invalid = isConnectionInvalid(routeDrag.startRef, routeDrag.targetRef);
+      const invalid = !isConnectionValid(routeDrag.startRef, routeDrag.targetRef);
       routePreviewLayer.appendChild(createSvg("circle", {
         class: `route-preview-target${invalid ? " invalid" : ""}`,
         cx: end.x,
@@ -2043,7 +1880,7 @@ function renderRail(rail) {
   part.connectors.forEach((connector, index) => {
     const connection = connectionFor(rail.id, index);
     const connected = Boolean(connection);
-    const invalid = connected && connectionHasInvalidState(connection);
+    const invalid = connected && !isConnectionValid(connection.from, connection.to);
     const point = projectWorldPoint(worldConnector(rail, index));
     const circle = createSvg("circle", {
       class: `connector ${connector.end}${connected ? " connected" : ""}${invalid ? " invalid" : ""}`,
@@ -2062,16 +1899,15 @@ function renderRail(rail) {
 }
 
 function renderConnections() {
-  const draggingRailIds = new Set(state.drag?.selectedRailIds || []);
   layout.connections.forEach(connection => {
     const aRail = railById(connection.from.railId);
     const bRail = railById(connection.to.railId);
     if (!aRail || !bRail) return;
-    if (draggingRailIds.has(aRail.id) || draggingRailIds.has(bRail.id)) return;
     const a = projectWorldPoint(worldConnector(aRail, connection.from.connector));
     const b = projectWorldPoint(worldConnector(bRail, connection.to.connector));
-    const invalid = connectionHasInvalidState(connection);
-    connectionLayer.appendChild(createSvg("line", { class: `connection-line${invalid ? " invalid" : ""}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
+    const invalid = !isConnectionValid(connection.from, connection.to);
+    if (!invalid) return;
+    connectionLayer.appendChild(createSvg("line", { class: "connection-line invalid", x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
   });
 }
 
@@ -2096,7 +1932,7 @@ function renderSelection() {
 }
 
 function setRailSwitchState(rail, switchId, nextState) {
-  const definition = rail && switchDefinitions(rail.part).find(item => item.id === switchId);
+    const definition = rail && switchDefinitionForRail(rail, switchId);
   if (!definition || !Object.prototype.hasOwnProperty.call(definition.states, nextState)) return;
   if (switchStateForRail(rail, switchId) === nextState) return;
   const historyBefore = simulator.isPlaying() ? null : layoutSnapshot();
@@ -2115,7 +1951,7 @@ function setSelectedSwitchState(switchId, nextState) {
 
 function toggleRailSwitch(railId, switchId) {
   const rail = railById(railId);
-  const definition = rail && switchDefinitions(rail.part).find(item => item.id === switchId);
+  const definition = rail && switchDefinitionForRail(rail, switchId);
   if (!definition) return;
   const stateNames = Object.keys(definition.states);
   const currentState = switchStateForRail(rail, switchId);
@@ -2968,7 +2804,7 @@ document.addEventListener("input", event => {
 document.addEventListener("change", event => {
   const speedControl = event.target.closest?.("[data-action='set-speed']");
   if (speedControl) {
-    simulator.setSpeed(speedControl.value);
+    simulationSpeedMultiplier = Number(speedControl.value);
     return;
   }
   const control = event.target.closest?.("[data-action='set-switch-mode']");
