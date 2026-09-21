@@ -45,7 +45,7 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .simulation-time strong { display: block; margin-top: 2px; color: #35445e; font-size: 13px; font-variant-numeric: tabular-nums; }
 .simulation-speed-select { min-width: 52px; padding: 4px 5px; color: #596982; background: #f8fafc; border: 1px solid var(--line); border-radius: 5px; font-size: 10px; font-weight: 800; }
 .simulation-speed-select:hover { color: var(--blue); border-color: #a6bde9; background: var(--blue-soft); }
-.panel-section { padding: 10px; border-bottom: 1px solid var(--line); }
+.panel-section { padding: 6px; border-bottom: 1px solid var(--line); }
 .left-panel > .panel-section:first-child .section-heading { align-items: center; margin-bottom: 4px; }
 .section-heading { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
 .section-heading.compact { margin-bottom: 15px; }
@@ -84,7 +84,7 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .selection-menu-item:hover { color: var(--blue); background: var(--blue-soft); }
 .zoom-button, .zoom-value { display: grid; place-items: center; height: 25px; border: 0; border-radius: 5px; color: #52627d; background: transparent; font-size: 16px; line-height: 1; }
 .zoom-button { width: 25px; }
-.zoom-value { width: 47px; font-size: 10px; font-weight: 800; }
+.zoom-value { width: 42px; padding: 0px; font-size: 10px; font-weight: 800; }
 .zoom-button:hover, .zoom-value:hover { color: var(--blue); background: white; }
 .shortcut-overlay { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(24, 34, 53, .32); }
 .shortcut-overlay[hidden] { display: none; }

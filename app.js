@@ -785,10 +785,8 @@ function rotateSelected(delta) {
       item.position[1] = center.y + dx * Math.sin(radians) + dy * Math.cos(radians);
       item.rotation = normalizeAngle(item.rotation + delta);
     });
-    rails.forEach(item => detachInvalidConnections(item.id));
   } else {
     rail.rotation = normalizeAngle(rail.rotation + delta);
-    detachInvalidConnections(rail.id);
   }
   pushHistoryIfChanged(historyBefore);
   scheduleLayoutSave();

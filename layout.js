@@ -286,6 +286,7 @@
   const api = {
     normalizeAngle,
     SUPPORTED_PART_TYPES,
+    SWITCH_MODES,
     angleDifference,
     transformPoint,
     projectWorldPoint,
