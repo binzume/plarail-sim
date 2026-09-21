@@ -712,6 +712,17 @@ function removeSelectedRail({ preserveConnections = false } = {}) {
   const historyBefore = layoutSnapshot();
   const removedIds = new Set(ids);
   const removedRails = layout.rails.filter(rail => removedIds.has(rail.id));
+  const nextSelectedRailId = ids.length === 1
+    ? layout.connections.map(connection => {
+      if (connection.from.railId === ids[0] && !removedIds.has(connection.to.railId)) {
+        return connection.to.railId;
+      }
+      if (connection.to.railId === ids[0] && !removedIds.has(connection.from.railId)) {
+        return connection.from.railId;
+      }
+      return null;
+    }).find(Boolean) || null
+    : null;
   const forcedConnections = preserveConnections
     ? forcedConnectionsForRemovedRails(removedRails, removedIds)
     : [];
@@ -722,8 +733,10 @@ function removeSelectedRail({ preserveConnections = false } = {}) {
         connectionFor(connection.to.railId, connection.to.connector)) return;
     layout.connections.push(connection);
   });
-  state.selectedRailId = null;
-  state.selectedRailIds = [];
+  state.selectedRailId = nextSelectedRailId && railById(nextSelectedRailId)
+    ? nextSelectedRailId
+    : null;
+  state.selectedRailIds = state.selectedRailId ? [state.selectedRailId] : [];
   pushHistoryIfChanged(historyBefore);
   scheduleLayoutSave();
   render();
