@@ -29,6 +29,8 @@ const SWITCH_MODES = Layout.SWITCH_MODES;
 const SWITCH_MARKER_INSET = 1.44;
 const SWITCH_MARKER_LENGTH = 1.72;
 const SWITCH_MARKER_WIDTH = 0.56;
+const FLOOR_FILTER_MIN_Z = 0;
+const FLOOR_FILTER_RANGE = 6;
 
 function isSupportedPart(partId) {
   return SUPPORTED_PART_TYPES.includes(PARTS[partId]?.type);
@@ -102,6 +104,33 @@ function averageConnectorHeight(rail) {
   return Layout.averageConnectorHeight(PARTS, rail);
 }
 
+function hasElevatedRails() {
+  return layout.rails.some(rail =>
+    PARTS[rail.part]?.type === "rail" && averageConnectorHeight(rail) > FLOOR_FILTER_MIN_Z
+  );
+}
+
+function isRailVisible(rail) {
+  return state.floorFilterZ === null ||
+    Math.abs(averageConnectorHeight(rail) - state.floorFilterZ) <= FLOOR_FILTER_RANGE;
+}
+
+function updateFloorFilterControl() {
+  const available = hasElevatedRails();
+  floorFilterSelect.hidden = !available;
+  floorFilterSelect.disabled = !available;
+  if (!available) state.floorFilterZ = null;
+  floorFilterSelect.value = state.floorFilterZ === null ? "" : String(state.floorFilterZ);
+}
+
+function setFloorFilter(value) {
+  if (!hasElevatedRails()) return;
+  state.floorFilterZ = value === "" ? null : Number(value);
+  state.selectedRailId = null;
+  state.selectedRailIds = [];
+  render();
+}
+
 function connectionFor(railId, connectorIndex) {
   return Layout.connectionFor(layout, railId, connectorIndex);
 }
@@ -141,7 +170,7 @@ const layout = {
   rails: [],
   connections: []
 };
-const state = { selectedRailId: null, selectedRailIds: [], drag: null, routeDrag: null, paletteDrag: null, pan: null, pinch: null, selectionDrag: null, justDragged: false, justRouteDragged: false, justPaletteDragged: false, justPanned: false, justRangeSelected: false, idCounter: 1 };
+const state = { selectedRailId: null, selectedRailIds: [], floorFilterZ: null, drag: null, routeDrag: null, paletteDrag: null, pan: null, pinch: null, selectionDrag: null, justDragged: false, justRouteDragged: false, justPaletteDragged: false, justPanned: false, justRangeSelected: false, idCounter: 1 };
 const history = { undo: [], redo: [], applying: false };
 const HISTORY_LIMIT = 100;
 const viewState = { zoom: 1, viewBox: { ...BASE_VIEWBOX } };
@@ -189,6 +218,7 @@ const playButton = document.querySelector("[data-action='toggle-play']");
 const simulationPanel = document.querySelector("#simulation-panel");
 const simulationTimeValue = document.querySelector("#simulation-time-value");
 const simulationSpeedSelect = document.querySelector("#simulation-speed-select");
+const floorFilterSelect = document.querySelector("#floor-filter");
 const shortcutOverlay = document.querySelector("#shortcut-overlay");
 const shortcutCloseButton = shortcutOverlay.querySelector("[data-action='close-shortcuts']");
 let simulationFrame = null;
@@ -560,18 +590,22 @@ function centeredOrder(index) {
   return index % 2 === 1 ? -(index + 1) / 2 : index / 2;
 }
 
+function placementZ() {
+  return state.floorFilterZ ?? 0;
+}
+
 function addRail(partId, dropPoint = null) {
   if (!isSupportedPart(partId)) return null;
   const historyBefore = layoutSnapshot();
   const index = layout.rails.length;
   const position = dropPoint
-    ? [dropPoint.x, dropPoint.y, 0]
+    ? [dropPoint.x, dropPoint.y, placementZ()]
     : (() => {
       const centerX = viewState.viewBox.x + viewState.viewBox.width / 2;
       const centerY = viewState.viewBox.y + viewState.viewBox.height / 2;
       const column = centeredOrder(index % 3);
       const row = centeredOrder(Math.floor(index / 3));
-      return [centerX + column * 12, centerY + row * 6, 0];
+      return [centerX + column * 12, centerY + row * 6, placementZ()];
     })();
   const switchStates = switchStatesForRail({ part: partId });
   const rail = {
@@ -902,7 +936,7 @@ function findBestNearbyConnection(movingRailIds, predicate) {
       if (connectionFor(moving.railId, moving.connector)) return;
       const movingWorld = worldConnector(movingRail, movingIndex);
       layout.rails.forEach(otherRail => {
-        if (movingIds.has(otherRail.id)) return;
+        if (movingIds.has(otherRail.id) || !isRailVisible(otherRail)) return;
         PARTS[otherRail.part].connectors.forEach((otherConnector, otherIndex) => {
           const anchor = { railId: otherRail.id, connector: otherIndex };
           if (connectionFor(anchor.railId, anchor.connector)) return;
@@ -1487,6 +1521,7 @@ function buildBestRoute(startRef, targetPoint, targetRef) {
 function findRouteTarget(point, startRef) {
   let best = null;
   layout.rails.forEach(rail => {
+    if (!isRailVisible(rail)) return;
     PARTS[rail.part].connectors.forEach((connector, connectorIndex) => {
       if (rail.id === startRef.railId && connectorIndex === startRef.connector) return;
       if (connectionFor(rail.id, connectorIndex)) return;
@@ -1901,6 +1936,7 @@ function renderConnections() {
     const aRail = railById(connection.from.railId);
     const bRail = railById(connection.to.railId);
     if (!aRail || !bRail) return;
+    if (!isRailVisible(aRail) || !isRailVisible(bRail)) return;
     const a = projectWorldPoint(worldConnector(aRail, connection.from.connector));
     const b = projectWorldPoint(worldConnector(bRail, connection.to.connector));
     const invalid = !isConnectionValid(connection.from, connection.to);
@@ -1910,7 +1946,9 @@ function renderConnections() {
 }
 
 function renderSelection() {
-  const selectedRails = layout.rails.filter(rail => state.selectedRailIds.includes(rail.id));
+  const selectedRails = layout.rails.filter(rail =>
+    state.selectedRailIds.includes(rail.id) && isRailVisible(rail)
+  );
   if (!selectedRails.length) return;
   const worldPoints = selectedRails.flatMap(rail =>
     localPartPoints(PARTS[rail.part], rail)
@@ -2014,7 +2052,7 @@ function switchStateLabel(stateName) {
 
 function renderInspector() {
   const rail = railById(state.selectedRailId);
-  if (!rail) {
+  if (!rail || !isRailVisible(rail)) {
     inspectorNoSelection.hidden = false;
     inspectorDetails.hidden = true;
     return;
@@ -2119,7 +2157,9 @@ function render(updateInspector = true) {
   connectionLayer.replaceChildren();
   routePreviewLayer.replaceChildren();
   selectionLayer.replaceChildren();
+  updateFloorFilterControl();
   const orderedParts = [...layout.rails]
+    .filter(isRailVisible)
     .sort((a, b) => averageConnectorHeight(a) - averageConnectorHeight(b));
   orderedParts.filter(part => !["train", "text"].includes(PARTS[part.part]?.type)).forEach(renderRail);
   orderedParts.filter(part => PARTS[part.part]?.type === "text").forEach(renderRail);
@@ -2129,7 +2169,9 @@ function render(updateInspector = true) {
   if (updateInspector) renderInspector();
   railCount.textContent = layout.rails.length;
   renderPartUsageCounts();
-  const hasSelection = Boolean(state.selectedRailId && railById(state.selectedRailId));
+  const hasSelection = Boolean(
+    state.selectedRailId && isRailVisible(railById(state.selectedRailId))
+  );
   selectionControls.classList.toggle("is-visible", hasSelection);
   selectionControls.setAttribute("aria-hidden", String(!hasSelection));
   if (!hasSelection) setSelectionMenuOpen(false);
@@ -2164,12 +2206,13 @@ function resetZoom() {
 }
 
 function fitLayout() {
-  if (!layout.rails.length) {
+  const visibleRails = layout.rails.filter(isRailVisible);
+  if (!visibleRails.length) {
     resetZoom();
     return;
   }
 
-  const worldPoints = layout.rails.flatMap(rail => {
+  const worldPoints = visibleRails.flatMap(rail => {
     const part = PARTS[rail.part];
     const localPoints = localPartPoints(part, rail);
     return localPoints.map(point => projectWorldPoint(transformPoint(point, rail)));
@@ -2242,6 +2285,7 @@ function updateSelectionDrag(point) {
 
 function railsInSelection(bounds) {
   return layout.rails.filter(rail => {
+    if (!isRailVisible(rail)) return false;
     const points = localPartPoints(PARTS[rail.part], rail)
       .map(point => projectWorldPoint(transformPoint(point, displayedPartInstance(rail))));
     const xs = points.map(point => point.x);
@@ -2800,6 +2844,11 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("change", event => {
+  const floorFilterControl = event.target.closest?.("[data-action='set-floor-filter']");
+  if (floorFilterControl) {
+    setFloorFilter(floorFilterControl.value);
+    return;
+  }
   const speedControl = event.target.closest?.("[data-action='set-speed']");
   if (speedControl) {
     simulationSpeedMultiplier = Number(speedControl.value);

@@ -63,6 +63,14 @@
             <button class="zoom-value" data-action="zoom-reset" id="zoom-value" title="初期倍率に戻す">100%</button>
             <button class="zoom-button" data-action="zoom-in" title="拡大">＋</button>
             <button class="zoom-button fit-button" data-action="fit-layout" title="全レールにフィット" aria-label="全レールにフィット">⛶</button>
+            <select class="floor-filter" id="floor-filter" data-action="set-floor-filter" aria-label="表示階" title="表示階" disabled>
+              <option value="">ALL</option>
+              <option value="0">1F</option>
+              <option value="10">2F</option>
+              <option value="20">3F</option>
+              <option value="30">4F</option>
+              <option value="40">5F</option>
+            </select>
           </div>
           <svg id="layout-canvas" viewBox="0 0 75 44" role="application" aria-label="レイアウト編集キャンバス">
             <defs>
