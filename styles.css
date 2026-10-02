@@ -89,6 +89,8 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .floor-filter { height: 25px; padding: 0 4px; color: #52627d; background: transparent; border: 0; border-radius: 5px; font-size: 10px; font-weight: 800; }
 .floor-filter:hover:not(:disabled) { color: var(--blue); background: white; }
 .floor-filter:disabled { color: #aab4c2; cursor: not-allowed; }
+.visibility-mode-indicator { padding: 5px 7px; color: #8a5b00; background: #fff4cf; border: 1px solid #f0d98b; border-radius: 5px; font-family: inherit; font-size: 10px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+.visibility-mode-indicator:hover { background: #ffedaa; }
 .shortcut-overlay { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(24, 34, 53, .32); }
 .shortcut-overlay[hidden] { display: none; }
 .shortcut-dialog { width: min(420px, calc(100vw - 40px)); max-height: calc(100vh - 40px); overflow: auto; padding: 18px 20px; background: white; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 36px rgba(34, 52, 84, .2); }

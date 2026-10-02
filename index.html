@@ -25,7 +25,7 @@
           </div>
         </div>
         <button class="save-status-button" data-action="save" title="自動バックアップ" aria-label="自動バックアップ"><span class="save-status-dot" id="save-status-dot" aria-hidden="true"></span></button>
-        <input id="layout-file-input" type="file" accept=".json,application/json" hidden />
+        <input id="layout-file-input" type="file" accept=".json,application/json" multiple hidden />
       </div>
     </header>
 
@@ -63,6 +63,7 @@
             <button class="zoom-value" data-action="zoom-reset" id="zoom-value" title="初期倍率に戻す">100%</button>
             <button class="zoom-button" data-action="zoom-in" title="拡大">＋</button>
             <button class="zoom-button fit-button" data-action="fit-layout" title="全レールにフィット" aria-label="全レールにフィット">⛶</button>
+            <button class="visibility-mode-indicator" id="visibility-mode-indicator" data-action="reset-visibility-mode" hidden>部分表示</button>
             <select class="floor-filter" id="floor-filter" data-action="set-floor-filter" aria-label="表示階" title="表示階" disabled>
               <option value="">ALL</option>
               <option value="0">1F</option>
@@ -147,6 +148,7 @@
           <dt><kbd>Shift</kbd> + <kbd>R</kbd></dt><dd>左に45°回転</dd>
           <dt><kbd>F</kbd></dt><dd>パーツを反転</dd>
           <dt><kbd>Shift</kbd> + <kbd>P</kbd></dt><dd>シミュレーションを再生・停止</dd>
+          <dt><kbd>V</kbd></dt><dd>部分表示モードを切り替え</dd>
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></dt><dd>元に戻す</dd>
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd></dt><dd>やり直す</dd>
           <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>C</kbd>/<kbd>V</kbd>/<kbd>X</kbd></dt><dd>コピー／貼り付け／切り取り</dd>

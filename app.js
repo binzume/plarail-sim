@@ -3,7 +3,7 @@
 const SVG_NS = "http://www.w3.org/2000/svg";
 const BASE_VIEWBOX = { x: 0, y: 0, width: 75, height: 44 };
 const DEFAULT_ZOOM = 1;
-const ZOOM_MIN = 0.1;
+const ZOOM_MIN = 0.01;
 const ZOOM_MAX = 3;
 const FIT_ZOOM_MAX = 2;
 const MM_PER_UNIT = 216 / 10;
@@ -111,8 +111,53 @@ function hasElevatedRails() {
 }
 
 function isRailVisible(rail) {
+  if (state.visibilityEditMode && !state.visibilityEditRailIds.has(rail.id)) return false;
   return state.floorFilterZ === null ||
     Math.abs(averageConnectorHeight(rail) - state.floorFilterZ) <= FLOOR_FILTER_RANGE;
+}
+
+function hasUnconnectedConnector(rail) {
+  return (PARTS[rail.part]?.connectors || [])
+    .some((_, connectorIndex) => !connectionFor(rail.id, connectorIndex));
+}
+
+function registerVisibilityEditRails(rails) {
+  if (!state.visibilityEditMode) return;
+  rails.forEach(rail => state.visibilityEditRailIds.add(rail.id));
+}
+
+function resetVisibilityEditMode() {
+  if (!state.visibilityEditMode) return;
+  state.visibilityEditMode = false;
+  state.visibilityEditRailIds = new Set();
+  render();
+}
+
+function toggleVisibilityEditMode() {
+  if (state.visibilityEditMode) {
+    resetVisibilityEditMode();
+    return;
+  }
+  const visibleRailIds = new Set(state.selectedRailIds);
+  if (state.selectedRailId) visibleRailIds.add(state.selectedRailId);
+  layout.rails.filter(hasUnconnectedConnector).forEach(rail => visibleRailIds.add(rail.id));
+  state.visibilityEditMode = true;
+  state.visibilityEditRailIds = visibleRailIds;
+  state.selectedRailId = null;
+  state.selectedRailIds = [];
+  render();
+}
+
+function isRailConnectedToHiddenRail(railId) {
+  if (!state.visibilityEditMode) return false;
+  return connectionsForRail(railId).some(connection => {
+    let otherRailId = null;
+    if (connection.from.railId === railId) otherRailId = connection.to.railId;
+    else if (connection.to.railId === railId) otherRailId = connection.from.railId;
+    if (!otherRailId) return false;
+    const otherRail = railById(otherRailId);
+    return Boolean(otherRail && !state.visibilityEditRailIds.has(otherRail.id));
+  });
 }
 
 function updateFloorFilterControl() {
@@ -131,8 +176,84 @@ function setFloorFilter(value) {
   render();
 }
 
+let connectionLookupSource = null;
+let connectionLookupSize = -1;
+let connectionLookup = new Map();
+let connectionAdjacency = new Map();
+let connectionIndexLookup = new Map();
+let railLookupSource = null;
+let railLookupSize = -1;
+let railLookup = new Map();
+
+let visibleRailsCache = null;
+let visibleRailsCacheLayout = null;
+let visibleRailsCacheLength = -1;
+let visibleRailsCacheFloor = null;
+let visibleRailsCacheMode = false;
+let visibleRailsCacheModeIds = null;
+
+function invalidateVisibleRailsCache() {
+  visibleRailsCache = null;
+}
+
+function rebuildConnectionLookups() {
+  connectionLookup = new Map();
+  connectionAdjacency = new Map();
+  connectionIndexLookup = new Map();
+  layout.connections.forEach((connection, index) => {
+    const fromKey = connectorLookupKey(connection.from.railId, connection.from.connector);
+    const toKey = connectorLookupKey(connection.to.railId, connection.to.connector);
+    if (!connectionLookup.has(fromKey)) connectionLookup.set(fromKey, connection);
+    if (!connectionLookup.has(toKey)) connectionLookup.set(toKey, connection);
+    connectionIndexLookup.set(connection, index);
+    [connection.from.railId, connection.to.railId].forEach(railId => {
+      const connections = connectionAdjacency.get(railId) || [];
+      connections.push(connection);
+      connectionAdjacency.set(railId, connections);
+    });
+  });
+  connectionLookupSource = layout.connections;
+  connectionLookupSize = layout.connections.length;
+}
+
+function ensureConnectionLookups() {
+  if (connectionLookupSource !== layout.connections || connectionLookupSize !== layout.connections.length) {
+    rebuildConnectionLookups();
+  }
+}
+
 function connectionFor(railId, connectorIndex) {
-  return Layout.connectionFor(layout, railId, connectorIndex);
+  ensureConnectionLookups();
+  return connectionLookup.get(connectorLookupKey(railId, connectorIndex)) || null;
+}
+
+function connectionsForRail(railId) {
+  ensureConnectionLookups();
+  return connectionAdjacency.get(railId) || [];
+}
+
+function visibleRails() {
+  if (
+    visibleRailsCache &&
+    visibleRailsCacheLayout === layout.rails &&
+    visibleRailsCacheLength === layout.rails.length &&
+    visibleRailsCacheFloor === state.floorFilterZ &&
+    visibleRailsCacheMode === state.visibilityEditMode &&
+    visibleRailsCacheModeIds === state.visibilityEditRailIds
+  ) {
+    return visibleRailsCache;
+  }
+  visibleRailsCache = layout.rails.filter(isRailVisible);
+  visibleRailsCacheLayout = layout.rails;
+  visibleRailsCacheLength = layout.rails.length;
+  visibleRailsCacheFloor = state.floorFilterZ;
+  visibleRailsCacheMode = state.visibilityEditMode;
+  visibleRailsCacheModeIds = state.visibilityEditRailIds;
+  return visibleRailsCache;
+}
+
+function connectorLookupKey(railId, connectorIndex) {
+  return `${railId}:${connectorIndex}`;
 }
 
 function isWithinSnapLimits(aConnector, bConnector) {
@@ -170,7 +291,7 @@ const layout = {
   rails: [],
   connections: []
 };
-const state = { selectedRailId: null, selectedRailIds: [], floorFilterZ: null, drag: null, routeDrag: null, paletteDrag: null, pan: null, pinch: null, selectionDrag: null, justDragged: false, justRouteDragged: false, justPaletteDragged: false, justPanned: false, justRangeSelected: false, idCounter: 1 };
+const state = { selectedRailId: null, selectedRailIds: [], floorFilterZ: null, visibilityEditMode: false, visibilityEditRailIds: new Set(), drag: null, routeDrag: null, paletteDrag: null, pan: null, pinch: null, selectionDrag: null, justDragged: false, justRouteDragged: false, justPaletteDragged: false, justPanned: false, justRangeSelected: false, idCounter: 1 };
 const history = { undo: [], redo: [], applying: false };
 const HISTORY_LIMIT = 100;
 const viewState = { zoom: 1, viewBox: { ...BASE_VIEWBOX } };
@@ -219,10 +340,13 @@ const simulationPanel = document.querySelector("#simulation-panel");
 const simulationTimeValue = document.querySelector("#simulation-time-value");
 const simulationSpeedSelect = document.querySelector("#simulation-speed-select");
 const floorFilterSelect = document.querySelector("#floor-filter");
+const visibilityModeIndicator = document.querySelector("#visibility-mode-indicator");
 const shortcutOverlay = document.querySelector("#shortcut-overlay");
 const shortcutCloseButton = shortcutOverlay.querySelector("[data-action='close-shortcuts']");
 let simulationFrame = null;
 let lastRenderedSimulationRevision = null;
+let simulationSwitchStateKeys = new Map();
+let simulationRailElements = new Map();
 let simulationFrameRequest = null;
 let simulationLastTimestamp = null;
 let simulationSpeedMultiplier = 1;
@@ -230,11 +354,14 @@ let simulationSpeedMultiplier = 1;
 const simulator = globalThis.createLayoutSimulator({
   layout,
   parts: PARTS,
-  onStateChange: playing => {
+  onStateChange: (playing, elapsed) => {
     playButton.textContent = playing ? "■" : "▶";
     playButton.title = playing ? "停止" : "再生";
     playButton.setAttribute("aria-label", playing ? "シミュレーションを停止" : "シミュレーションを再生");
     simulationPanel.hidden = !playing;
+    if (!playing && Number.isFinite(elapsed)) {
+      logSimulationStop(elapsed);
+    }
   }
 });
 
@@ -247,7 +374,8 @@ function applySimulationFrame(frame) {
     simulationTimeValue.textContent = "00:00";
   }
   const updateInspector = !frame || frame.revision !== lastRenderedSimulationRevision;
-  render(updateInspector);
+  if (frame) renderSimulationFrame(frame, updateInspector);
+  else render(updateInspector);
   lastRenderedSimulationRevision = frame ? frame.revision : null;
 }
 
@@ -272,6 +400,13 @@ function formatSimulationTime(seconds) {
   return `${String(minutes).padStart(2, "0")}:${remainingSeconds}`;
 }
 
+function logSimulationStop(elapsed) {
+  console.log("[simulator] stopped", {
+    elapsedSeconds: elapsed,
+    elapsedTime: formatSimulationTime(elapsed)
+  });
+}
+
 function displayedPartInstance(partInstance) {
   const frame = simulationFrame?.trains?.[partInstance.id];
   if (!frame) return partInstance;
@@ -291,6 +426,9 @@ function stopSimulation() {
   simulationLastTimestamp = null;
   simulator.reset();
   simulationFrame = null;
+  lastRenderedSimulationRevision = null;
+  simulationSwitchStateKeys = new Map();
+  simulationRailElements = new Map();
   render();
 }
 
@@ -464,6 +602,10 @@ function importLayoutData(data, append) {
   const historyBefore = layoutSnapshot();
 
   if (!append) {
+    if (state.visibilityEditMode) {
+      state.visibilityEditMode = false;
+      state.visibilityEditRailIds = new Set();
+    }
     layout.rails = normalized.rails;
     layout.connections = normalized.connections;
     layout.metadata = normalized.metadata;
@@ -482,6 +624,7 @@ function importLayoutData(data, append) {
     const importedConnections = normalized.connections.map(connection => cloneConnection(connection, idMap));
     layout.rails.push(...importedRails);
     layout.connections.push(...importedConnections);
+    registerVisibilityEditRails(importedRails);
   }
 
   state.selectedRailId = null;
@@ -493,12 +636,18 @@ function importLayoutData(data, append) {
   return true;
 }
 
-async function importDroppedLayout(file, append) {
-  try {
-    const data = JSON.parse(await file.text());
-    if (!importLayoutData(data, append)) throw new Error("Invalid layout data");
-  } catch (error) {
-    console.error("Failed to import layout JSON", error);
+async function importDroppedLayouts(files, append = false) {
+  let hasImportedLayout = false;
+  for (const file of Array.from(files || []).filter(isJsonFile)) {
+    try {
+      const data = JSON.parse(await file.text());
+      if (!importLayoutData(data, append || hasImportedLayout)) {
+        throw new Error("Invalid layout data");
+      }
+      hasImportedLayout = true;
+    } catch (error) {
+      console.error(`Failed to import layout JSON: ${file.name}`, error);
+    }
   }
 }
 
@@ -567,7 +716,12 @@ function snapPosition(value) {
 }
 
 function railById(id) {
-  return layout.rails.find(rail => rail.id === id);
+  if (railLookupSource !== layout.rails || railLookupSize !== layout.rails.length) {
+    railLookup = new Map(layout.rails.map(rail => [rail.id, rail]));
+    railLookupSource = layout.rails;
+    railLookupSize = layout.rails.length;
+  }
+  return railLookup.get(id);
 }
 
 function switchDestinationConnectorIndex(rail, definition) {
@@ -619,6 +773,7 @@ function addRail(partId, dropPoint = null) {
     ...(Object.keys(switchStates).length ? { states: switchStates } : {})
   };
   layout.rails.push(rail);
+  registerVisibilityEditRails([rail]);
   state.selectedRailId = rail.id;
   state.selectedRailIds = [rail.id];
   pushHistoryIfChanged(historyBefore);
@@ -782,13 +937,23 @@ function parseRailClipboardData(text) {
 function pasteRailClipboardData(data) {
   const historyBefore = layoutSnapshot();
   const idMap = new Map();
+  const sourceCenter = data.rails.reduce((center, rail) => ({
+    x: center.x + rail.position[0] / data.rails.length,
+    y: center.y + rail.position[1] / data.rails.length
+  }), { x: 0, y: 0 });
+  const targetCenter = {
+    x: viewState.viewBox.x + viewState.viewBox.width / 2,
+    y: viewState.viewBox.y + viewState.viewBox.height / 2
+  };
+  const offsetX = targetCenter.x - sourceCenter.x;
+  const offsetY = targetCenter.y - sourceCenter.y;
   const pastedRails = data.rails.map(sourceRail => {
     const switchStates = switchStatesForRail(sourceRail);
     const storedMode = switchModeForRail(sourceRail);
     const rail = {
       id: nextId(),
       part: sourceRail.part,
-      position: [sourceRail.position[0] + 2, sourceRail.position[1] + 2, sourceRail.position[2]],
+      position: [sourceRail.position[0] + offsetX, sourceRail.position[1] + offsetY, sourceRail.position[2]],
       rotation: sourceRail.rotation,
       flip: Boolean(sourceRail.flip),
       ...(storedMode ? { mode: storedMode } : {}),
@@ -807,6 +972,7 @@ function pasteRailClipboardData(data) {
       to: { railId: idMap.get(connection.to.railId), connector: connection.to.connector }
     });
   });
+  registerVisibilityEditRails(pastedRails);
   state.selectedRailId = pastedRails[0].id;
   state.selectedRailIds = pastedRails.map(rail => rail.id);
   pushHistoryIfChanged(historyBefore);
@@ -1069,8 +1235,20 @@ function autoConnectDraggedSelection() {
 
 function updateDraggedConnections(drag, railIds, reconnect = null) {
   if (drag.preserveConnections) return;
+  const affectedRailIds = new Set(railIds);
+  const addDirectConnectionPeers = sourceRailIds => {
+    sourceRailIds.forEach(railId => {
+      connectionsForRail(railId).forEach(connection => {
+        affectedRailIds.add(connection.from.railId);
+        affectedRailIds.add(connection.to.railId);
+      });
+    });
+  };
+  addDirectConnectionPeers(railIds);
   railIds.forEach(detachInvalidConnections);
   reconnect?.();
+  addDirectConnectionPeers(railIds);
+  drag.displayRailIds = [...affectedRailIds];
 }
 
 function curvePathPoints(pathDefinition) {
@@ -1229,6 +1407,7 @@ function pathsForRail(rail) {
   );
   return part.paths
     .map((pathDefinition, index) => ({
+      index,
       d: pathForRailDefinition(pathDefinition, rail),
       shadowD: pathForRailDefinition(pathDefinition, rail, false),
       color: pathDefinition.color,
@@ -1675,6 +1854,7 @@ function commitRoute(routeDrag) {
     layout.rails.push(rail);
     return rail;
   });
+  registerVisibilityEditRails(addedRails);
   const remap = ref => ({ railId: idMap.get(ref.railId) || ref.railId, connector: ref.connector });
   route.connections.forEach(connection => {
     layout.connections.push({ from: remap(connection.from), to: remap(connection.to) });
@@ -1706,26 +1886,27 @@ function toggleRailSelection(id) {
 }
 
 function renderSelectionChange() {
-  render(!simulator.isPlaying());
-  if (simulator.isPlaying()) renderInspector();
+  renderSelection();
+  updateSelectionControlsDisplay();
+  renderInspector();
 }
 
 function connectedRailIds(startId) {
+  const visibleOnly = state.visibilityEditMode;
   const connected = new Set([startId]);
-  let expanded = true;
-  while (expanded) {
-    expanded = false;
-    layout.connections.forEach(connection => {
-      const fromSelected = connected.has(connection.from.railId);
-      const toSelected = connected.has(connection.to.railId);
-      if (fromSelected && !connected.has(connection.to.railId)) {
-        connected.add(connection.to.railId);
-        expanded = true;
-      }
-      if (toSelected && !connected.has(connection.from.railId)) {
-        connected.add(connection.from.railId);
-        expanded = true;
-      }
+  const queue = [startId];
+  let queueIndex = 0;
+  while (queueIndex < queue.length) {
+    const railId = queue[queueIndex++];
+    connectionsForRail(railId).forEach(connection => {
+      const otherRailId = connection.from.railId === railId
+        ? connection.to.railId
+        : connection.from.railId;
+      if (connected.has(otherRailId)) return;
+      const otherRail = railById(otherRailId);
+      if (!otherRail || (visibleOnly && !isRailVisible(otherRail))) return;
+      connected.add(otherRailId);
+      queue.push(otherRailId);
     });
   }
   return [...connected];
@@ -1752,6 +1933,11 @@ function selectConnectedRails(id) {
 function addPartInteraction(group, rail) {
   group.addEventListener("pointerdown", event => beginDrag(event, rail.id));
   group.addEventListener("click", event => {
+    if (isRailConnectedToHiddenRail(rail.id)) {
+      state.justDragged = false;
+      state.justRouteDragged = false;
+      return;
+    }
     if (state.justRouteDragged) {
       state.justRouteDragged = false;
       return;
@@ -1844,7 +2030,7 @@ function renderTrain(rail) {
   railLayer.appendChild(group);
 }
 
-function renderSwitchMarker(group, rail, definition) {
+function switchMarkerGeometry(rail, definition) {
   if (!Number.isInteger(definition.connector)) return;
   const targetConnector = PARTS[rail.part]?.connectors?.[definition.connector];
   if (!targetConnector) return;
@@ -1881,7 +2067,13 @@ function renderSwitchMarker(group, rail, definition) {
       y: base.y - normal.y * SWITCH_MARKER_WIDTH / 2
     }
   ].map(point => `${point.x},${point.y}`).join(" ");
-  const isNormalMode = switchModeForRail(rail) === "";
+  return { points, isNormalMode: switchModeForRail(rail) === "" };
+}
+
+function renderSwitchMarker(group, rail, definition) {
+  const geometry = switchMarkerGeometry(rail, definition);
+  if (!geometry) return;
+  const { points, isNormalMode } = geometry;
   const marker = createSvg("polygon", {
     class: `switch-marker${isNormalMode ? "" : " disabled"}`,
     points,
@@ -1891,7 +2083,7 @@ function renderSwitchMarker(group, rail, definition) {
   marker.addEventListener("pointerdown", event => event.stopPropagation());
   marker.addEventListener("click", event => {
     event.stopPropagation();
-    if (isNormalMode) toggleRailSwitch(rail.id, definition.id);
+    if (switchModeForRail(rail) === "") toggleRailSwitch(rail.id, definition.id);
   });
   group.appendChild(marker);
 }
@@ -1911,17 +2103,22 @@ function renderRail(rail) {
     "data-rail-id": rail.id
   });
   pathsForRail(rail).forEach(path => {
+    const pathGroup = createSvg("g", {
+      class: "rail-path",
+      "data-path-index": path.index
+    });
     if (path.shadowD !== path.d) {
-      group.appendChild(createSvg("path", { d: path.shadowD, class: "rail-height-shadow" }));
+      pathGroup.appendChild(createSvg("path", { d: path.shadowD, class: "rail-height-shadow" }));
     }
-    group.appendChild(createSvg("path", { d: path.d, class: "rail-shadow" }));
-    group.appendChild(createSvg("path", {
+    pathGroup.appendChild(createSvg("path", { d: path.d, class: "rail-shadow" }));
+    pathGroup.appendChild(createSvg("path", {
       d: path.d,
       class: `rail-line ${switchModeForRail(rail)}`,
       ...(path.color ? { style: `stroke: ${path.color}` } : {})
     }));
-    group.appendChild(createSvg("path", { d: path.d, class: "rail-inner" }));
-    group.appendChild(createSvg("path", { d: path.d, class: "rail-hit" }));
+    pathGroup.appendChild(createSvg("path", { d: path.d, class: "rail-inner" }));
+    pathGroup.appendChild(createSvg("path", { d: path.d, class: "rail-hit" }));
+    group.appendChild(pathGroup);
   });
   part.connectors.forEach((connector, index) => {
     const connection = connectionFor(rail.id, index);
@@ -1944,25 +2141,56 @@ function renderRail(rail) {
   railLayer.appendChild(group);
 }
 
-function renderConnections() {
-  layout.connections.forEach(connection => {
+function visibleConnections(rails = visibleRails()) {
+  const visibleIds = new Set(rails.map(rail => rail.id));
+  const seenConnections = new Set();
+  const result = [];
+  rails.forEach(rail => {
+    connectionsForRail(rail.id).forEach(connection => {
+      if (seenConnections.has(connection)) return;
+      const otherRailId = connection.from.railId === rail.id
+        ? connection.to.railId
+        : connection.from.railId;
+      if (!visibleIds.has(otherRailId)) return;
+      seenConnections.add(connection);
+      result.push({ connection, index: connectionIndexLookup.get(connection) });
+    });
+  });
+  return result;
+}
+
+function renderConnections(rails = visibleRails()) {
+  visibleConnections(rails).forEach(({ connection, index: connectionIndex }) => {
     const aRail = railById(connection.from.railId);
     const bRail = railById(connection.to.railId);
     if (!aRail || !bRail) return;
-    if (!isRailVisible(aRail) || !isRailVisible(bRail)) return;
     const a = projectWorldPoint(worldConnector(aRail, connection.from.connector));
     const b = projectWorldPoint(worldConnector(bRail, connection.to.connector));
     const invalid = !isConnectionValid(connection.from, connection.to);
-    if (!invalid) return;
-    connectionLayer.appendChild(createSvg("line", { class: "connection-line invalid", x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
+    connectionLayer.appendChild(createSvg("line", {
+      class: "connection-line invalid",
+      "data-connection-index": connectionIndex,
+      "data-connection-key": connectionKey(connection),
+      "data-from-rail-id": connection.from.railId,
+      "data-to-rail-id": connection.to.railId,
+      ...(invalid ? {} : { style: "display: none" }),
+      x1: a.x, y1: a.y, x2: b.x, y2: b.y
+    }));
   });
 }
 
-function renderSelection() {
-  const selectedRails = layout.rails.filter(rail =>
-    state.selectedRailIds.includes(rail.id) && isRailVisible(rail)
-  );
-  if (!selectedRails.length) return;
+function connectionKey(connection) {
+  return `${connection.from.railId}:${connection.from.connector}-${connection.to.railId}:${connection.to.connector}`;
+}
+
+function renderSelection(rails = visibleRails()) {
+  const selectedIds = new Set(state.selectedRailIds);
+  const selectedRails = rails.filter(rail => selectedIds.has(rail.id));
+  const existingOutline = selectionLayer.querySelector(".selection-outline");
+  if (!selectedRails.length) {
+    existingOutline?.remove();
+    return;
+  }
   const worldPoints = selectedRails.flatMap(rail =>
     localPartPoints(PARTS[rail.part], rail)
       .map(point => projectWorldPoint(transformPoint(point, displayedPartInstance(rail))))
@@ -1974,10 +2202,12 @@ function renderSelection() {
   const maxX = Math.max(...xs) + padding;
   const minY = Math.min(...ys) - padding;
   const maxY = Math.max(...ys) + padding;
-  selectionLayer.appendChild(createSvg("rect", {
-    class: "selection-outline", x: minX, y: minY,
-    width: maxX - minX, height: maxY - minY, rx: .4
-  }));
+  const outline = existingOutline || createSvg("rect", { class: "selection-outline", rx: .4 });
+  outline.setAttribute("x", minX);
+  outline.setAttribute("y", minY);
+  outline.setAttribute("width", maxX - minX);
+  outline.setAttribute("height", maxY - minY);
+  if (!existingOutline) selectionLayer.appendChild(outline);
 }
 
 function setRailSwitchState(rail, switchId, nextState) {
@@ -1991,7 +2221,8 @@ function setRailSwitchState(rail, switchId, nextState) {
   };
   if (historyBefore) pushHistoryIfChanged(historyBefore);
   if (!simulator.isPlaying()) scheduleLayoutSave();
-  render();
+  if (simulator.isPlaying() && simulationFrame) renderSimulationFrame(simulationFrame);
+  else render();
 }
 
 function setSelectedSwitchState(switchId, nextState) {
@@ -2019,7 +2250,8 @@ function setSelectedSwitchMode(mode) {
   else delete rail.mode;
   pushHistoryIfChanged(historyBefore);
   scheduleLayoutSave();
-  render();
+  if (simulator.isPlaying() && simulationFrame) renderSimulationFrame(simulationFrame);
+  else render();
 }
 
 function setSelectedTrainColor(color) {
@@ -2165,29 +2397,310 @@ function renderSampleButtons() {
   loadMenuDivider.hidden = !hasSamples;
 }
 
-function render(updateInspector = true) {
-  railLayer.replaceChildren();
-  connectionLayer.replaceChildren();
-  routePreviewLayer.replaceChildren();
-  selectionLayer.replaceChildren();
-  updateFloorFilterControl();
-  const orderedParts = [...layout.rails]
-    .filter(isRailVisible)
-    .sort((a, b) => averageConnectorHeight(a) - averageConnectorHeight(b));
-  orderedParts.filter(part => !["train", "text"].includes(PARTS[part.part]?.type)).forEach(renderRail);
-  orderedParts.filter(part => PARTS[part.part]?.type === "text").forEach(renderRail);
-  orderedParts.filter(part => PARTS[part.part]?.type === "train").forEach(renderRail);
-  renderConnections();
-  renderSelection();
+function railLayerElement(railId) {
+  return simulationRailElements.get(railId) || null;
+}
+
+function updateRailSwitchVisual(rail) {
+  const group = railLayerElement(rail.id);
+  if (!group || !switchDefinitions(rail.part).length) return;
+
+  const activePathIndexes = new Set(
+    switchDefinitions(rail.part).map(definition =>
+      definition.states[switchStateForRail(rail, definition.id)]
+    )
+  );
+  const pathGroups = Array.from(group.children)
+    .filter(element => element.classList.contains("rail-path"))
+    .sort((a, b) => {
+      const aActive = activePathIndexes.has(Number(a.dataset.pathIndex));
+      const bActive = activePathIndexes.has(Number(b.dataset.pathIndex));
+      return Number(aActive) - Number(bActive);
+    });
+  pathGroups.forEach(pathGroup => {
+    const line = pathGroup.querySelector(".rail-line");
+    if (line) line.setAttribute("class", `rail-line ${switchModeForRail(rail)}`);
+  });
+  const firstNonPathElement = Array.from(group.children)
+    .find(element => !element.classList.contains("rail-path")) || null;
+  pathGroups.forEach(pathGroup => group.insertBefore(pathGroup, firstNonPathElement));
+
+  switchDefinitions(rail.part).forEach(definition => {
+    const marker = Array.from(group.children).find(element =>
+      element.dataset.switchId === definition.id
+    );
+    const geometry = switchMarkerGeometry(rail, definition);
+    if (!marker || !geometry) return;
+    marker.setAttribute("points", geometry.points);
+    marker.classList.toggle("disabled", !geometry.isNormalMode);
+  });
+}
+
+function updateSimulationSwitches() {
+  layout.rails.forEach(rail => {
+    if (PARTS[rail.part]?.type !== "rail" || !switchDefinitions(rail.part).length) return;
+    const stateKey = [
+      switchModeForRail(rail),
+      ...switchDefinitions(rail.part).map(definition =>
+        `${definition.id}:${switchStateForRail(rail, definition.id)}`
+      )
+    ].join("|");
+    if (simulationSwitchStateKeys.get(rail.id) === stateKey) return;
+    simulationSwitchStateKeys.set(rail.id, stateKey);
+    updateRailSwitchVisual(rail);
+  });
+}
+
+function updateSimulationTrainElements(frame) {
+  layout.rails.forEach(rail => {
+    if (PARTS[rail.part]?.type !== "train") return;
+    const trainFrame = frame.trains?.[rail.id];
+    const group = railLayerElement(rail.id);
+    if (!trainFrame || !group) return;
+    group.setAttribute(
+      "transform",
+      `translate(${trainFrame.position[0]} ${trainFrame.position[1] - trainFrame.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${trainFrame.rotation}) scale(${trainFrame.flip ? -1 : 1} 1)`
+    );
+  });
+}
+
+function simulationElementDepth(rail, frame) {
+  if (PARTS[rail.part]?.type === "train") {
+    return frame.trains?.[rail.id]?.pathDepth ?? rail.position[2];
+  }
+  if (PARTS[rail.part]?.type === "text") return rail.position[2];
+  return averageConnectorHeight(rail);
+}
+
+function simulationElementTypeOrder(rail) {
+  return PARTS[rail.part]?.type === "train" ? 1 : 0;
+}
+
+function reorderSimulationElements(frame) {
+  const currentElements = Array.from(railLayer.children);
+  const currentIndex = new Map(currentElements.map((element, index) => [element, index]));
+  const orderedElements = layout.rails
+    .map(rail => ({ rail, element: railLayerElement(rail.id) }))
+    .filter(item => item.element && isRailVisible(item.rail))
+    .sort((a, b) => {
+      const depthDifference = simulationElementDepth(a.rail, frame) - simulationElementDepth(b.rail, frame);
+      if (depthDifference) return depthDifference;
+      const typeDifference = simulationElementTypeOrder(a.rail) - simulationElementTypeOrder(b.rail);
+      return typeDifference || currentIndex.get(a.element) - currentIndex.get(b.element);
+    })
+    .map(item => item.element);
+  if (orderedElements.every((element, index) => currentElements[index] === element)) return;
+  orderedElements.forEach((element, index) => {
+    if (railLayer.children[index] !== element) {
+      railLayer.insertBefore(element, railLayer.children[index] || null);
+    }
+  });
+}
+
+function renderSimulationFrame(frame, updateInspector = true) {
+  simulationRailElements = new Map(
+    Array.from(railLayer.children).map(element => [element.dataset.railId, element])
+  );
+  updateSimulationTrainElements(frame);
+  updateSimulationSwitches();
+  reorderSimulationElements(frame);
   if (updateInspector) renderInspector();
-  railCount.textContent = layout.rails.length;
-  renderPartUsageCounts();
+}
+
+function updateRailElement(rail) {
+  const group = railLayerElement(rail.id);
+  if (!group) return;
+  const part = PARTS[rail.part];
+  const displayed = displayedPartInstance(rail);
+
+  if (part.type === "text") {
+    group.setAttribute(
+      "transform",
+      `translate(${displayed.position[0]} ${displayed.position[1] - displayed.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${displayed.rotation})`
+    );
+    return;
+  }
+  if (part.type === "train") {
+    group.setAttribute(
+      "transform",
+      `translate(${displayed.position[0]} ${displayed.position[1] - displayed.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${displayed.rotation}) scale(${displayed.flip ? -1 : 1} 1)`
+    );
+    return;
+  }
+
+  const pathsByIndex = new Map(pathsForRail(rail).map(path => [path.index, path]));
+  Array.from(group.children)
+    .filter(element => element.classList.contains("rail-path"))
+    .forEach(pathGroup => {
+      const path = pathsByIndex.get(Number(pathGroup.dataset.pathIndex));
+      if (!path) return;
+      Array.from(pathGroup.querySelectorAll("path")).forEach(pathElement => {
+        pathElement.setAttribute(
+          "d",
+          pathElement.classList.contains("rail-height-shadow") ? path.shadowD : path.d
+        );
+        if (pathElement.classList.contains("rail-line")) {
+          pathElement.setAttribute("class", `rail-line ${switchModeForRail(rail)}`);
+          if (path.color) pathElement.setAttribute("style", `stroke: ${path.color}`);
+          else pathElement.removeAttribute("style");
+        }
+      });
+    });
+
+  part.connectors.forEach((connector, index) => {
+    const circle = Array.from(group.children).find(element =>
+      element.dataset.connectorIndex === String(index)
+    );
+    if (!circle) return;
+    const connection = connectionFor(rail.id, index);
+    const connected = Boolean(connection);
+    const invalid = connected && !isConnectionValid(connection.from, connection.to);
+    const point = projectWorldPoint(worldConnector(rail, index));
+    circle.setAttribute("class", `connector ${connector.end}${connected ? " connected" : ""}${invalid ? " invalid" : ""}`);
+    circle.setAttribute("cx", point.x);
+    circle.setAttribute("cy", point.y);
+  });
+  updateRailSwitchVisual(rail);
+}
+
+function updateConnectionsDisplay(dirtyRailIds = null) {
+  const dirtyIds = dirtyRailIds ? new Set(dirtyRailIds) : null;
+  const existingLines = new Map(
+    Array.from(connectionLayer.children).map(line => [line.dataset.connectionKey, line])
+  );
+  const visibleConnectionEntries = visibleConnections();
+  const currentKeys = new Set(
+    visibleConnectionEntries.map(({ connection }) => connectionKey(connection))
+  );
+  const activeKeys = new Set();
+  visibleConnectionEntries.forEach(({ connection }) => {
+    const key = connectionKey(connection);
+    if (dirtyIds && !dirtyIds.has(connection.from.railId) && !dirtyIds.has(connection.to.railId)) return;
+    const aRail = railById(connection.from.railId);
+    const bRail = railById(connection.to.railId);
+    if (!aRail || !bRail || !isRailVisible(aRail) || !isRailVisible(bRail)) return;
+    const a = projectWorldPoint(worldConnector(aRail, connection.from.connector));
+    const b = projectWorldPoint(worldConnector(bRail, connection.to.connector));
+    const invalid = !isConnectionValid(connection.from, connection.to);
+    const line = existingLines.get(key) || createSvg("line", {
+      class: "connection-line invalid",
+      "data-connection-key": key,
+      "data-from-rail-id": connection.from.railId,
+      "data-to-rail-id": connection.to.railId
+    });
+    line.setAttribute("x1", a.x);
+    line.setAttribute("y1", a.y);
+    line.setAttribute("x2", b.x);
+    line.setAttribute("y2", b.y);
+    if (invalid) line.removeAttribute("style");
+    else line.setAttribute("style", "display: none");
+    if (!line.parentNode) connectionLayer.appendChild(line);
+    activeKeys.add(key);
+  });
+  existingLines.forEach((line, key) => {
+    const touchesDirtyRail = !dirtyIds || dirtyIds.has(line.dataset.fromRailId) || dirtyIds.has(line.dataset.toRailId);
+    if (!currentKeys.has(key) || (touchesDirtyRail && !activeKeys.has(key))) line.remove();
+  });
+}
+
+function reorderLayoutElements() {
+  const currentElements = Array.from(railLayer.children);
+  const currentIndex = new Map(currentElements.map((element, index) => [element, index]));
+  const orderedElements = visibleRails()
+    .map(rail => ({ rail, element: railLayerElement(rail.id) }))
+    .filter(item => item.element)
+    .sort((a, b) => {
+      const heightDifference = averageConnectorHeight(a.rail) - averageConnectorHeight(b.rail);
+      return heightDifference || currentIndex.get(a.element) - currentIndex.get(b.element);
+    })
+    .map(item => item.element);
+  if (orderedElements.every((element, index) => currentElements[index] === element)) return;
+  orderedElements.forEach((element, index) => {
+    if (railLayer.children[index] !== element) {
+      railLayer.insertBefore(element, railLayer.children[index] || null);
+    }
+  });
+}
+
+function dragChangesDisplayDepth(dirtyRailIds) {
+  if (!state.drag) return true;
+  const dirtyIds = new Set(dirtyRailIds);
+  return state.drag.initialPositions.some(initial => {
+    if (!dirtyIds.has(initial.id)) return false;
+    const rail = railById(initial.id);
+    return rail && rail.position[2] !== initial.position[2];
+  });
+}
+
+function updateSelectionControlsDisplay() {
   const hasSelection = Boolean(
     state.selectedRailId && isRailVisible(railById(state.selectedRailId))
   );
   selectionControls.classList.toggle("is-visible", hasSelection);
   selectionControls.setAttribute("aria-hidden", String(!hasSelection));
   if (!hasSelection) setSelectionMenuOpen(false);
+}
+
+function updateVisibilityModeIndicator() {
+  if (!visibilityModeIndicator) return;
+  visibilityModeIndicator.hidden = !state.visibilityEditMode;
+  visibilityModeIndicator.title = state.visibilityEditMode
+    ? "クリックまたはVキーで部分表示を解除"
+    : "Vキーで部分表示モードに切り替え";
+}
+
+function updateLayoutDisplay(dirtyRailIds = null, updateInspector = true) {
+  invalidateVisibleRailsCache();
+  const dirtyIds = dirtyRailIds ? new Set(dirtyRailIds) : null;
+  visibleRails()
+    .filter(rail => !dirtyIds || dirtyIds.has(rail.id))
+    .forEach(updateRailElement);
+  updateConnectionsDisplay(dirtyIds);
+  renderSelection();
+  if (!dirtyIds || dragChangesDisplayDepth(dirtyIds)) reorderLayoutElements();
+  updateSelectionControlsDisplay();
+  if (updateInspector) renderInspector();
+}
+
+function dragDisplayRailIds(drag = state.drag) {
+  if (!drag) return [];
+  const dirtyIds = new Set(drag.displayRailIds || drag.selectedRailIds);
+  drag.selectedRailIds.forEach(railId => dirtyIds.add(railId));
+  if (drag.snapLock) {
+    dirtyIds.add(drag.snapLock.anchor.railId);
+    dirtyIds.add(drag.snapLock.moving.railId);
+  }
+  [...dirtyIds].forEach(railId => {
+    connectionsForRail(railId).forEach(connection => {
+      dirtyIds.add(connection.from.railId);
+      dirtyIds.add(connection.to.railId);
+    });
+  });
+  return [...dirtyIds];
+}
+
+function render(updateInspector = true) {
+  invalidateVisibleRailsCache();
+  railLayer.replaceChildren();
+  connectionLayer.replaceChildren();
+  routePreviewLayer.replaceChildren();
+  selectionLayer.replaceChildren();
+  updateFloorFilterControl();
+  updateVisibilityModeIndicator();
+  const orderedParts = [...visibleRails()]
+    .sort((a, b) => averageConnectorHeight(a) - averageConnectorHeight(b));
+  orderedParts.filter(part => !["train", "text"].includes(PARTS[part.part]?.type)).forEach(renderRail);
+  orderedParts.filter(part => PARTS[part.part]?.type === "text").forEach(renderRail);
+  orderedParts.filter(part => PARTS[part.part]?.type === "train").forEach(renderRail);
+  renderConnections(orderedParts);
+  renderSelection(orderedParts);
+  simulationRailElements = new Map(
+    Array.from(railLayer.children).map(element => [element.dataset.railId, element])
+  );
+  if (updateInspector) renderInspector();
+  railCount.textContent = layout.rails.length;
+  renderPartUsageCounts();
+  updateSelectionControlsDisplay();
   emptyState.hidden = layout.rails.length > 0;
 }
 
@@ -2219,13 +2732,13 @@ function resetZoom() {
 }
 
 function fitLayout() {
-  const visibleRails = layout.rails.filter(isRailVisible);
-  if (!visibleRails.length) {
+  const rails = visibleRails();
+  if (!rails.length) {
     resetZoom();
     return;
   }
 
-  const worldPoints = visibleRails.flatMap(rail => {
+  const worldPoints = rails.flatMap(rail => {
     const part = PARTS[rail.part];
     const localPoints = localPartPoints(part, rail);
     return localPoints.map(point => projectWorldPoint(transformPoint(point, rail)));
@@ -2297,8 +2810,8 @@ function updateSelectionDrag(point) {
 }
 
 function railsInSelection(bounds) {
-  return layout.rails.filter(rail => {
-    if (!isRailVisible(rail)) return false;
+  return visibleRails().filter(rail => {
+    if (isRailConnectedToHiddenRail(rail.id)) return false;
     const points = localPartPoints(PARTS[rail.part], rail)
       .map(point => projectWorldPoint(transformPoint(point, displayedPartInstance(rail))));
     const xs = points.map(point => point.x);
@@ -2419,17 +2932,29 @@ function beginDrag(event, railId) {
   if (event.button !== 0) return;
   if (event.pointerType === "touch" && state.pinch) return;
   const rail = railById(railId);
+  if (!rail || !isRailVisible(rail) || isRailConnectedToHiddenRail(railId)) return;
   const point = svgPoint(event);
   const dragPoint = logicalPointAtHeight(point, rail.position[2]);
   state.justDragged = false;
   const multiSelect = event.ctrlKey || event.metaKey;
+  let selectedRailIds = [...state.selectedRailIds];
   if (!multiSelect) {
     state.selectedRailId = railId;
-    if (event.shiftKey) state.selectedRailIds = connectedRailIds(railId);
-    else if (!state.selectedRailIds.includes(railId)) state.selectedRailIds = [railId];
+    if (event.shiftKey) selectedRailIds = connectedRailIds(railId);
+    else if (!selectedRailIds.includes(railId)) selectedRailIds = [railId];
   }
+  const requestedRailIds = [...selectedRailIds];
+  selectedRailIds = selectedRailIds.filter(selectedId => {
+    const selectedRail = railById(selectedId);
+    return selectedRail && isRailVisible(selectedRail) && !isRailConnectedToHiddenRail(selectedId);
+  });
+  if (!selectedRailIds.length || selectedRailIds.length !== requestedRailIds.length) {
+    // A hidden or locked member must not be moved as part of a group drag.
+    // Keep the existing selection intact when the drag is rejected.
+    return;
+  }
+  state.selectedRailIds = selectedRailIds;
   if (simulator.isPlaying()) renderInspector();
-  const selectedRailIds = [...state.selectedRailIds];
   state.drag = {
     railId,
     selectedRailIds,
@@ -2446,6 +2971,25 @@ function beginDrag(event, railId) {
     historyBefore: layoutSnapshot()
   };
   event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function beginSelectedBoundsDrag(event) {
+  if (event.button !== 0 || !state.selectedRailIds.length) return;
+  if (event.pointerType === "touch" && state.pinch) return;
+  if (event.target.closest?.(".switch-marker, .connector")) return;
+  const outline = selectionLayer.querySelector(".selection-outline");
+  if (!outline) return;
+  const point = svgPoint(event);
+  const x = Number(outline.getAttribute("x"));
+  const y = Number(outline.getAttribute("y"));
+  const width = Number(outline.getAttribute("width"));
+  const height = Number(outline.getAttribute("height"));
+  if (point.x < x || point.x > x + width || point.y < y || point.y > y + height) return;
+  const railId = state.selectedRailId || state.selectedRailIds.at(-1);
+  if (!railId) return;
+  event.preventDefault();
+  event.stopPropagation();
+  beginDrag(event, railId);
 }
 
 document.addEventListener("pointermove", event => {
@@ -2558,20 +3102,20 @@ document.addEventListener("pointermove", event => {
       if (distanceFromAnchor <= SNAP_DISTANCE * 1.2) {
         snapSelectedRailsToConnector(anchorRail, lock.anchor.connector, movingRail, lock.moving.connector);
         state.drag.moved = true;
-        render();
+        updateLayoutDisplay(dragDisplayRailIds());
         return;
       }
       removeSnapConnections(lock);
       state.drag.snapLock = null;
       state.drag.moved = true;
       autoConnectDraggedSelection();
-      render();
+      updateLayoutDisplay(dragDisplayRailIds());
       return;
     }
 
     state.drag.moved = true;
     updateDraggedConnections(state.drag, state.drag.selectedRailIds, autoConnectDraggedSelection);
-    render();
+    updateLayoutDisplay(dragDisplayRailIds());
     return;
   }
 
@@ -2595,7 +3139,7 @@ document.addEventListener("pointermove", event => {
       state.drag.moved = true;
       // Keep the offset fixed at the moment of snapping.
       // Updating it on every move would prevent accumulated pointer movement from exceeding the unlock distance.
-      render();
+      updateLayoutDisplay(dragDisplayRailIds());
       return;
     }
     // Once the tolerance is exceeded, disconnect and resume dragging naturally from the snapped position.
@@ -2608,7 +3152,7 @@ document.addEventListener("pointermove", event => {
     rail.position[1] = snapPosition(dragPoint.y + state.drag.offsetY);
     state.drag.moved = true;
     autoConnectDraggedRail(rail, dragPoint);
-    render();
+    updateLayoutDisplay(dragDisplayRailIds());
     return;
   }
 
@@ -2616,7 +3160,7 @@ document.addEventListener("pointermove", event => {
   rail.position[1] = snapPosition(dragPoint.y + state.drag.offsetY);
   state.drag.moved = true;
   updateDraggedConnections(state.drag, [rail.id], () => autoConnectDraggedRail(rail, dragPoint));
-  render();
+  updateLayoutDisplay(dragDisplayRailIds());
 });
 
 document.addEventListener("pointerup", event => {
@@ -2682,7 +3226,7 @@ document.addEventListener("pointerup", event => {
     updateDraggedConnections(drag, draggedIds);
     if (!fromPalette) pushHistoryIfChanged(drag.historyBefore);
     scheduleLayoutSave();
-    render();
+    updateLayoutDisplay(dragDisplayRailIds(drag));
   }
 });
 
@@ -2712,6 +3256,7 @@ document.addEventListener("pointercancel", () => {
 });
 document.addEventListener("pointerdown", trackTouchPointer, true);
 document.addEventListener("pointerdown", beginPaletteDrag);
+canvas.addEventListener("pointerdown", beginSelectedBoundsDrag, true);
 canvas.addEventListener("pointerdown", beginPan);
 canvasWrap.addEventListener("dragover", event => {
   const types = Array.from(event.dataTransfer?.types || []);
@@ -2720,10 +3265,10 @@ canvasWrap.addEventListener("dragover", event => {
   event.dataTransfer.dropEffect = event.shiftKey ? "copy" : "move";
 });
 canvasWrap.addEventListener("drop", event => {
-  const file = event.dataTransfer?.files?.[0];
-  if (!isJsonFile(file)) return;
+  const files = Array.from(event.dataTransfer?.files || []).filter(isJsonFile);
+  if (!files.length) return;
   event.preventDefault();
-  void importDroppedLayout(file, event.shiftKey);
+  void importDroppedLayouts(files, event.shiftKey);
 });
 canvas.addEventListener("wheel", event => {
   event.preventDefault();
@@ -2764,6 +3309,10 @@ document.addEventListener("click", event => {
   }
   if (action === "close-shortcuts") {
     setShortcutOverlayOpen(false);
+    return;
+  }
+  if (action === "reset-visibility-mode") {
+    resetVisibilityEditMode();
     return;
   }
   if (action === "add") {
@@ -2887,8 +3436,7 @@ document.addEventListener("change", event => {
 });
 
 layoutFileInput.addEventListener("change", event => {
-  const file = event.target.files?.[0];
-  if (isJsonFile(file)) void importDroppedLayout(file, false);
+  void importDroppedLayouts(event.target.files, false);
 });
 
 document.addEventListener("keydown", event => {
@@ -2907,6 +3455,11 @@ document.addEventListener("keydown", event => {
   }
   const modifier = event.ctrlKey || event.metaKey;
   const key = event.key.toLowerCase();
+  if (key === "v" && !modifier && !event.altKey && !event.shiftKey && !event.repeat) {
+    event.preventDefault();
+    toggleVisibilityEditMode();
+    return;
+  }
   if (event.shiftKey && key === "p" && !modifier && !event.altKey) {
     event.preventDefault();
     toggleSimulation();
@@ -2929,7 +3482,12 @@ document.addEventListener("keydown", event => {
   }
   if (key === "r") rotateSelected(event.shiftKey ? -45 : 45);
   if (key === "f") flipSelected();
-  if (event.key === "Escape") render();
+  if (event.key === "Escape") {
+    state.selectedRailId = null;
+    state.selectedRailIds = [];
+    setSelectionMenuOpen(false);
+    render();
+  }
 });
 
 function clearLayout() {

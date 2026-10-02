@@ -245,6 +245,11 @@
       }));
     }
 
+    function averagePathHeight(path) {
+      if (!path?.points?.length) return null;
+      return path.points.reduce((sum, point) => sum + point.z, 0) / path.points.length;
+    }
+
     function activePathIndexes(rail) {
       const definitions = layoutApi.getSwitchDefinitions(parts, rail.part);
       if (!definitions.length) return null;
@@ -371,6 +376,7 @@
           pathIndex: null,
           distanceAlong: 0,
           direction: 1,
+          pathDepth: null,
           position: [...train.position],
           rotation: train.rotation,
           flip: Boolean(train.flip),
@@ -385,6 +391,7 @@
         pathIndex: best.path.index,
         distanceAlong: best.nearest.along,
         direction,
+        pathDepth: averagePathHeight(best.path),
         position: [...train.position],
         rotation: train.rotation,
         flip: Boolean(train.flip),
@@ -470,6 +477,7 @@
       state.pathIndex = nextPath.index;
       state.direction = nextPath.from === nextRef.connector ? 1 : -1;
       state.distanceAlong = state.direction > 0 ? 0 : nextPath.length;
+      state.pathDepth = averagePathHeight(nextPath);
       return true;
     }
 
@@ -485,7 +493,13 @@
         const available = state.direction > 0
           ? path.length - state.distanceAlong
           : state.distanceAlong;
-        if (remaining < available || available < EPSILON) {
+        if (available < EPSILON) {
+          state.distanceAlong = state.direction > 0 ? path.length : 0;
+          if (!transitionToNextPath(state)) break;
+          updateTrainVisual(state);
+          continue;
+        }
+        if (remaining < available) {
           state.distanceAlong += state.direction * remaining;
           remaining = 0;
           updateTrainVisual(state);
@@ -527,6 +541,16 @@
       }
     }
 
+    function allTrainsStopped() {
+      return trainStates.length > 0 && trainStates.every(state => state.status === "stopped");
+    }
+
+    function stopWhenAllTrainsStopped() {
+      if (!playing || !allTrainsStopped()) return false;
+      reset();
+      return true;
+    }
+
     function frame() {
       return {
         elapsed: elapsedTime,
@@ -535,6 +559,7 @@
           position: [...state.position],
           rotation: state.rotation,
           flip: state.flip,
+          pathDepth: state.pathDepth,
           status: state.status
         }]))
       };
@@ -546,7 +571,9 @@
       let remaining = Number.isFinite(requestedElapsed)
         ? Math.max(0, requestedElapsed)
         : 0;
+      stopWhenAllTrainsStopped();
       while (remaining > EPSILON) {
+        if (!playing) break;
         const elapsed = Math.min(remaining, maxStepDeltaTime);
         elapsedTime += elapsed;
         trainStates.forEach(state => advanceTrain(
@@ -555,6 +582,7 @@
         ));
         detectTrainCollisions();
         remaining -= elapsed;
+        stopWhenAllTrainsStopped();
       }
       return frame();
     }
@@ -575,15 +603,16 @@
         .map(createTrainState);
       detectTrainCollisions();
       playing = true;
-      options.onStateChange?.(true);
+      options.onStateChange?.(true, elapsedTime);
       return true;
     }
 
     function reset() {
-      if (playing) {
-        playing = false;
-        trainStates = [];
-        options.onStateChange?.(false);
+      const wasPlaying = playing;
+      playing = false;
+      trainStates = [];
+      if (wasPlaying) {
+        options.onStateChange?.(false, elapsedTime);
       }
       initialSwitches.forEach(snapshot => {
         const rail = railById(snapshot.id);
