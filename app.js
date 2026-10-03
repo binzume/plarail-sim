@@ -69,6 +69,10 @@ function trainSpeedForRail(rail) {
   return Number(Math.min(TRAIN_SPEED_MAX, Math.max(TRAIN_SPEED_MIN, speed)).toFixed(1));
 }
 
+function eventNameForRail(rail) {
+  return typeof rail?.event?.name === "string" ? rail.event.name : "";
+}
+
 function isValidRailData(rail, knownIds = null) {
   return Layout.isValidRailData(PARTS, rail, knownIds);
 }
@@ -79,12 +83,17 @@ function isValidConnectionData(connection, railsById) {
 
 function normalizeLayout(savedLayout) {
   return Layout.normalizeLayout(PARTS, layout.schemaVersion, savedLayout, {
-    normalizeInstance: (rail, part) => part?.type === "train"
-      ? {
-        color: trainColorForRail(rail),
-        speed: trainSpeedForRail(rail)
-      }
-      : {}
+    normalizeInstance: (rail, part) => {
+      const instance = part?.type === "train"
+        ? {
+          color: trainColorForRail(rail),
+          speed: trainSpeedForRail(rail)
+        }
+        : {};
+      const eventName = part?.type === "rail" ? eventNameForRail(rail).trim() : "";
+      if (eventName) instance.event = { name: eventName };
+      return instance;
+    }
   });
 }
 
@@ -960,6 +969,9 @@ function pasteRailClipboardData(data) {
       ...(PARTS[sourceRail.part].type === "train" ? { color: trainColorForRail(sourceRail) } : {}),
       ...(PARTS[sourceRail.part].type === "train" ? { speed: trainSpeedForRail(sourceRail) } : {}),
       ...(PARTS[sourceRail.part].type === "text" ? { text: typeof sourceRail.text === "string" ? sourceRail.text : "" } : {}),
+      ...(PARTS[sourceRail.part].type === "rail" && eventNameForRail(sourceRail).trim()
+        ? { event: { name: eventNameForRail(sourceRail).trim() } }
+        : {}),
       ...(Object.keys(switchStates).length ? { states: switchStates } : {})
     };
     idMap.set(sourceRail.id, rail.id);
@@ -2291,6 +2303,20 @@ function setSelectedText(text) {
   render();
 }
 
+function setSelectedRailEventName(name) {
+  const rail = railById(state.selectedRailId);
+  if (!rail || state.selectedRailIds.length !== 1 || PARTS[rail.part]?.type !== "rail") return;
+  const normalizedName = String(name ?? "").trim();
+  const currentName = eventNameForRail(rail).trim();
+  if (currentName === normalizedName && (normalizedName ? rail.event?.name === normalizedName : !rail.event)) return;
+  const historyBefore = layoutSnapshot();
+  if (normalizedName) rail.event = { name: normalizedName };
+  else delete rail.event;
+  pushHistoryIfChanged(historyBefore);
+  scheduleLayoutSave();
+  render();
+}
+
 function switchStateLabel(stateName) {
   return stateName.charAt(0).toUpperCase() + stateName.slice(1);
 }
@@ -2353,13 +2379,19 @@ function renderInspector() {
         <input id="text-content" data-action="set-text" type="text" value="${escapeHtml(rail.text || "")}" />
       </div>`
     : "";
+  const eventControl = part.type === "rail" && state.selectedRailIds.length === 1
+    ? `<div class="event-name-control">
+        <label for="rail-event-name">Event</label>
+        <input id="rail-event-name" data-action="set-rail-event-name" type="text" value="${escapeHtml(eventNameForRail(rail))}" placeholder="Event name" />
+      </div>`
+    : "";
   inspectorPartName.textContent = partLabel(rail.part);
   inspectorPartId.textContent = `id: ${rail.id}`;
   inspectorPositionX.textContent = `X ${snapPosition(rail.position[0])}`;
   inspectorPositionY.textContent = `Y ${snapPosition(rail.position[1])}`;
   inspectorPositionZ.textContent = `Z ${rail.position[2]}`;
   inspectorRotation.textContent = `${rail.rotation}°${rail.flip ? " (Flipped)" : ""}`;
-  inspectorDynamicControls.innerHTML = `${switchControls}${trainColorControl}${trainSpeedControl}${textControl}`;
+  inspectorDynamicControls.innerHTML = `${switchControls}${trainColorControl}${trainSpeedControl}${textControl}${eventControl}`;
 }
 
 function setSelectionMenuOpen(open) {
@@ -3432,7 +3464,12 @@ document.addEventListener("change", event => {
     return;
   }
   const textControl = event.target.closest?.("[data-action='set-text']");
-  if (textControl) setSelectedText(textControl.value);
+  if (textControl) {
+    setSelectedText(textControl.value);
+    return;
+  }
+  const eventNameControl = event.target.closest?.("[data-action='set-rail-event-name']");
+  if (eventNameControl) setSelectedRailEventName(eventNameControl.value);
 });
 
 layoutFileInput.addEventListener("change", event => {

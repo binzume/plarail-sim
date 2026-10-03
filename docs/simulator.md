@@ -15,6 +15,9 @@ const simulator = createLayoutSimulator({
   maxStepDeltaTime: 0.1,
   onStateChange: playing => {
     // 開始時・停止時に呼ばれる
+  },
+  onStart: trains => {
+    // 開始時点の列車とレールの対応
   }
 });
 ```
@@ -25,6 +28,7 @@ const simulator = createLayoutSimulator({
 - `parts`: 部品定義の辞書。コネクタ、走行経路、分岐定義などを含む
 - `maxStepDeltaTime`: 内部サブステップの最大時間（秒）。省略時は `0.1`
 - `onStateChange(playing)`: シミュレーションの開始・リセット時に呼ばれる任意のコールバック
+- `onStart(trains)`: 開始時に列車と初期レールの対応を通知する任意のコールバック。`trains` は `{ id, railId }` の配列で、レールに接続していない列車の `railId` は `null`
 
 ## 操作 API
 
@@ -57,6 +61,7 @@ simulator.isPlaying();
 {
   elapsed: 1.25,
   revision: 3,
+  events: [],
   trains: {
     "train-001": {
       position: [x, y, z],
@@ -70,7 +75,25 @@ simulator.isPlaying();
 
 - `elapsed`: シミュレーション経過時間。再生速度を反映した値
 - `revision`: ポイント状態など、レイアウト側の論理状態が変化した回数
+- `events`: この `update()` の処理中に発生したイベントの配列。イベントがない場合は空配列
 - `trains`: 列車 ID ごとの位置・向き・状態
+
+### レール通過イベント
+
+レイアウト上のレールに `event: { name: "駅1" }` が設定されている場合、列車がそのレールへ進入した時に次のイベントを生成する。
+
+```js
+{
+  type: "rail-enter",
+  time: 12.34,
+  trainId: "train-001",
+  railId: "rail-023",
+  name: "駅1",
+  connector: 1
+}
+```
+
+`time` はレール境界を通過したシミュレーション時刻。`events` は1回の `update()` に複数のレールを通過した場合も、発生順にすべて含む。シミュレーション開始時点ですでにそのレール上にいる場合、初期配置によるイベントは生成しない。
 
 ## 外部タイマーからの利用
 

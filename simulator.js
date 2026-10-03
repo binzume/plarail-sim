@@ -421,7 +421,7 @@
       state.rotation = normalizeAngle(Math.atan2(tangent.y, tangent.x) * 180 / Math.PI);
     }
 
-    function transitionToNextPath(state) {
+    function transitionToNextPath(state, events, eventTime) {
       const rail = railById(state.railId);
       if (!rail) {
         state.status = "stopped";
@@ -473,16 +473,28 @@
         toggleSwitch(nextRail, entrySwitch);
       }
 
+      const eventName = typeof nextRail.event?.name === "string" ? nextRail.event.name.trim() : "";
       state.railId = nextRail.id;
       state.pathIndex = nextPath.index;
       state.direction = nextPath.from === nextRef.connector ? 1 : -1;
       state.distanceAlong = state.direction > 0 ? 0 : nextPath.length;
       state.pathDepth = averagePathHeight(nextPath);
+      if (eventName) {
+        events.push({
+          type: "rail-enter",
+          time: eventTime,
+          trainId: state.id,
+          railId: nextRail.id,
+          name: eventName,
+          connector: nextRef.connector
+        });
+      }
       return true;
     }
 
-    function advanceTrain(state, amount) {
+    function advanceTrain(state, amount, events, stepStartTime, speedPerSecond) {
       let remaining = amount;
+      let traveled = 0;
       while (state.status === "running" && remaining > EPSILON) {
         const rail = railById(state.railId);
         const path = rail && pathRecords(rail).find(item => item.index === state.pathIndex);
@@ -495,20 +507,31 @@
           : state.distanceAlong;
         if (available < EPSILON) {
           state.distanceAlong = state.direction > 0 ? path.length : 0;
-          if (!transitionToNextPath(state)) break;
+          if (!transitionToNextPath(
+            state,
+            events,
+            stepStartTime + traveled / speedPerSecond
+          )) break;
           updateTrainVisual(state);
           continue;
         }
         if (remaining < available) {
           state.distanceAlong += state.direction * remaining;
+          traveled += remaining;
           remaining = 0;
           updateTrainVisual(state);
           continue;
         }
         state.distanceAlong = state.direction > 0 ? path.length : 0;
         updateTrainVisual(state);
-        remaining -= Math.max(available, 0);
-        if (!transitionToNextPath(state)) break;
+        const traveledOnPath = Math.max(available, 0);
+        remaining -= traveledOnPath;
+        traveled += traveledOnPath;
+        if (!transitionToNextPath(
+          state,
+          events,
+          stepStartTime + traveled / speedPerSecond
+        )) break;
         updateTrainVisual(state);
       }
     }
@@ -551,10 +574,11 @@
       return true;
     }
 
-    function frame() {
+    function frame(events = []) {
       return {
         elapsed: elapsedTime,
         revision,
+        events,
         trains: Object.fromEntries(trainStates.map(state => [state.id, {
           position: [...state.position],
           rotation: state.rotation,
@@ -571,20 +595,29 @@
       let remaining = Number.isFinite(requestedElapsed)
         ? Math.max(0, requestedElapsed)
         : 0;
+      const events = [];
       stopWhenAllTrainsStopped();
       while (remaining > EPSILON) {
         if (!playing) break;
         const elapsed = Math.min(remaining, maxStepDeltaTime);
+        const stepStartTime = elapsedTime;
         elapsedTime += elapsed;
-        trainStates.forEach(state => advanceTrain(
-          state,
-          SPEED * elapsed * trainSpeedMultiplier(state)
-        ));
+        trainStates.forEach(state => {
+          const speedPerSecond = SPEED * trainSpeedMultiplier(state);
+          advanceTrain(
+            state,
+            speedPerSecond * elapsed,
+            events,
+            stepStartTime,
+            speedPerSecond
+          );
+        });
         detectTrainCollisions();
         remaining -= elapsed;
         stopWhenAllTrainsStopped();
       }
-      return frame();
+      events.sort((first, second) => first.time - second.time);
+      return frame(events);
     }
 
     function start() {
@@ -601,6 +634,10 @@
       trainStates = currentLayout.rails
         .filter(rail => parts[rail.part]?.type === "train")
         .map(createTrainState);
+      options.onStart?.(trainStates.map(state => ({
+        id: state.id,
+        railId: state.railId
+      })));
       detectTrainCollisions();
       playing = true;
       options.onStateChange?.(true, elapsedTime);

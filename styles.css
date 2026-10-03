@@ -136,6 +136,8 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .train-speed-input output { min-width: 30px; color: #35445e; font-size: 11px; font-weight: 400; text-align: right; }
 .text-content-control { display: grid; gap: 4px; margin-top: 7px; color: #596982; font-size: 10px; font-weight: 700; }
 .text-content-control input { width: 100%; box-sizing: border-box; padding: 5px 6px; color: #35445e; background: white; border: 1px solid var(--line); border-radius: 5px; font-size: 11px; }
+.event-name-control { display: grid; gap: 4px; margin-top: 7px; color: #596982; font-size: 10px; font-weight: 700; }
+.event-name-control input { width: 100%; box-sizing: border-box; padding: 5px 6px; color: #35445e; background: white; border: 1px solid var(--line); border-radius: 5px; font-size: 11px; }
 .switch-point-control + .switch-point-control { margin-top: 6px; }
 .switch-point-control > label { display: block; margin-bottom: 4px; color: #9aa7b9; font-size: 9px; font-weight: 700; }
 .switch-options { display: flex; gap: 4px; }
