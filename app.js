@@ -101,6 +101,10 @@ function projectWorldPoint(point) {
   return Layout.projectWorldPoint(point, HEIGHT_DISPLAY_SCALE);
 }
 
+function projectedPosition(position) {
+  return projectWorldPoint({ x: position[0], y: position[1], z: position[2] });
+}
+
 function logicalPointAtHeight(point, z) {
   return Layout.logicalPointAtHeight(point, z, HEIGHT_DISPLAY_SCALE);
 }
@@ -1173,7 +1177,8 @@ function autoConnectDraggedRail(movingRail, pointerPoint) {
     connections: [{ anchor: { ...best.anchor }, moving: { ...best.moving } }, ...snapConnections],
     restoreState
   };
-  state.drag.offsetX = movingRail.position[0] - pointerPoint.x;
+  state.drag.offsetX = movingRail.position[0] - pointerPoint.x +
+    (movingRail.position[2] - previousHeight) * HEIGHT_DISPLAY_SCALE / 2;
   state.drag.offsetY = movingRail.position[1] - pointerPoint.y -
     (movingRail.position[2] - previousHeight) * HEIGHT_DISPLAY_SCALE;
   return true;
@@ -1772,9 +1777,10 @@ function renderRoutePreview() {
   const route = routeDrag.preview;
   if (!route) return;
   route.rails.forEach(rail => {
+    const displayPosition = projectedPosition(rail.position);
     const group = createSvg("g", {
       class: "route-preview",
-      transform: `translate(${rail.position[0]} ${rail.position[1] - rail.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${rail.rotation}) scale(${rail.flip ? -1 : 1} 1)`
+      transform: `translate(${displayPosition.x} ${displayPosition.y}) rotate(${rail.rotation}) scale(${rail.flip ? -1 : 1} 1)`
     });
     pathsForPart(rail.part).forEach(path => {
       group.appendChild(createSvg("path", { d: path, class: "rail-shadow" }));
@@ -1968,11 +1974,12 @@ function addPartInteraction(group, rail) {
 function renderText(rail) {
   const part = PARTS[rail.part];
   const displayed = displayedPartInstance(rail);
+  const displayPosition = projectedPosition(displayed.position);
   const metrics = textMetrics(rail.text, part);
   const group = createSvg("g", {
     class: "rail-instance text-instance",
     "data-rail-id": rail.id,
-    transform: `translate(${displayed.position[0]} ${displayed.position[1] - displayed.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${displayed.rotation})`
+    transform: `translate(${displayPosition.x} ${displayPosition.y}) rotate(${displayed.rotation})`
   });
   group.appendChild(createSvg("rect", {
     class: "text-box",
@@ -2020,10 +2027,11 @@ function renderTrain(rail) {
   const part = PARTS[rail.part];
   const [width, height] = part.size;
   const displayed = displayedPartInstance(rail);
+  const displayPosition = projectedPosition(displayed.position);
   const group = createSvg("g", {
     class: "rail-instance train-instance",
     "data-rail-id": rail.id,
-    transform: `translate(${displayed.position[0]} ${displayed.position[1] - displayed.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${displayed.rotation}) scale(${displayed.flip ? -1 : 1} 1)`
+    transform: `translate(${displayPosition.x} ${displayPosition.y}) rotate(${displayed.rotation}) scale(${displayed.flip ? -1 : 1} 1)`
   });
   group.appendChild(createSvg("path", {
     class: "train-body",
@@ -2122,7 +2130,6 @@ function renderRail(rail) {
     if (path.shadowD !== path.d) {
       pathGroup.appendChild(createSvg("path", { d: path.shadowD, class: "rail-height-shadow" }));
     }
-    pathGroup.appendChild(createSvg("path", { d: path.d, class: "rail-shadow" }));
     pathGroup.appendChild(createSvg("path", {
       d: path.d,
       class: `rail-line ${switchModeForRail(rail)}`,
@@ -2489,9 +2496,10 @@ function updateSimulationTrainElements(frame) {
     const trainFrame = frame.trains?.[rail.id];
     const group = railLayerElement(rail.id);
     if (!trainFrame || !group) return;
+    const displayPosition = projectedPosition(trainFrame.position);
     group.setAttribute(
       "transform",
-      `translate(${trainFrame.position[0]} ${trainFrame.position[1] - trainFrame.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${trainFrame.rotation}) scale(${trainFrame.flip ? -1 : 1} 1)`
+      `translate(${displayPosition.x} ${displayPosition.y}) rotate(${trainFrame.rotation}) scale(${trainFrame.flip ? -1 : 1} 1)`
     );
   });
 }
@@ -2546,16 +2554,18 @@ function updateRailElement(rail) {
   const displayed = displayedPartInstance(rail);
 
   if (part.type === "text") {
+    const displayPosition = projectedPosition(displayed.position);
     group.setAttribute(
       "transform",
-      `translate(${displayed.position[0]} ${displayed.position[1] - displayed.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${displayed.rotation})`
+      `translate(${displayPosition.x} ${displayPosition.y}) rotate(${displayed.rotation})`
     );
     return;
   }
   if (part.type === "train") {
+    const displayPosition = projectedPosition(displayed.position);
     group.setAttribute(
       "transform",
-      `translate(${displayed.position[0]} ${displayed.position[1] - displayed.position[2] * HEIGHT_DISPLAY_SCALE}) rotate(${displayed.rotation}) scale(${displayed.flip ? -1 : 1} 1)`
+      `translate(${displayPosition.x} ${displayPosition.y}) rotate(${displayed.rotation}) scale(${displayed.flip ? -1 : 1} 1)`
     );
     return;
   }

@@ -29,13 +29,14 @@
   function projectWorldPoint(point, heightDisplayScale) {
     return {
       ...point,
+      x: point.x + point.z * heightDisplayScale / 2,
       y: point.y - point.z * heightDisplayScale
     };
   }
 
   function logicalPointAtHeight(point, z, heightDisplayScale) {
     return {
-      x: point.x,
+      x: point.x - z * heightDisplayScale / 2,
       y: point.y + z * heightDisplayScale
     };
   }
