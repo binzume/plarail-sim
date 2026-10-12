@@ -29,6 +29,7 @@ const SWITCH_MODES = Layout.SWITCH_MODES;
 const SWITCH_MARKER_INSET = 1.44;
 const SWITCH_MARKER_LENGTH = 1.72;
 const SWITCH_MARKER_WIDTH = 0.56;
+const EVENT_MARKER_RADIUS = 1.7;
 const FLOOR_FILTER_MIN_Z = 0;
 const FLOOR_FILTER_RANGE = 6;
 
@@ -1434,6 +1435,62 @@ function pathsForRail(rail) {
     .sort((a, b) => Number(a.active) - Number(b.active));
 }
 
+function cubicPoint(segment, t) {
+  const inverse = 1 - t;
+  return [
+    inverse ** 3 * segment.start[0] + 3 * inverse ** 2 * t * segment.control1[0] +
+      3 * inverse * t ** 2 * segment.control2[0] + t ** 3 * segment.endpoint[0],
+    inverse ** 3 * segment.start[1] + 3 * inverse ** 2 * t * segment.control1[1] +
+      3 * inverse * t ** 2 * segment.control2[1] + t ** 3 * segment.endpoint[1],
+    inverse ** 3 * segment.start[2] + 3 * inverse ** 2 * t * segment.control1[2] +
+      3 * inverse * t ** 2 * segment.control2[2] + t ** 3 * segment.endpoint[2]
+  ];
+}
+
+function eventMarkerPoint(rail) {
+  const part = PARTS[rail.part];
+  const paths = pathsForRail(rail);
+  const path = paths.find(item => item.active) || paths[0];
+  const segments = path && localPathSegments(part.paths[path.index], part);
+  if (!segments?.length) return null;
+
+  const samples = segments.flatMap((segment, segmentIndex) => {
+    const points = Array.from({ length: 25 }, (_, index) =>
+      cubicPoint(segment, index / 24)
+    );
+    return segmentIndex === 0 ? points : points.slice(1);
+  });
+  const lengths = samples.slice(1).map((point, index) =>
+    Math.hypot(point[0] - samples[index][0], point[1] - samples[index][1])
+  );
+  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+  if (!totalLength) return projectWorldPoint(transformPoint(samples[0], rail));
+
+  let distance = totalLength / 2;
+  for (let index = 0; index < lengths.length; index += 1) {
+    if (distance <= lengths[index]) {
+      const start = samples[index];
+      const end = samples[index + 1];
+      const ratio = lengths[index] ? distance / lengths[index] : 0;
+      const midpoint = start.map((value, coordinateIndex) =>
+        value + (end[coordinateIndex] - value) * ratio
+      );
+      return projectWorldPoint(transformPoint(midpoint, rail));
+    }
+    distance -= lengths[index];
+  }
+  return projectWorldPoint(transformPoint(samples.at(-1), rail));
+}
+
+function updateEventMarker(rail, group = railLayerElement(rail.id)) {
+  const marker = group?.querySelector(".event-marker");
+  if (!marker) return;
+  const point = eventMarkerPoint(rail);
+  if (!point) return;
+  marker.setAttribute("cx", point.x);
+  marker.setAttribute("cy", point.y);
+}
+
 function localPathPoints(pathDefinition, part = null) {
   return localPathSegments(pathDefinition, part).flatMap((segment, index) => [
     ...(index === 0 ? [segment.start] : []),
@@ -2156,6 +2213,18 @@ function renderRail(rail) {
     group.appendChild(circle);
   });
   switchDefinitions(rail.part).forEach(definition => renderSwitchMarker(group, rail, definition));
+  if (eventNameForRail(rail).trim()) {
+    const point = eventMarkerPoint(rail);
+    if (point) {
+      group.appendChild(createSvg("circle", {
+        class: "event-marker",
+        cx: point.x,
+        cy: point.y,
+        r: EVENT_MARKER_RADIUS,
+        "aria-label": eventNameForRail(rail).trim()
+      }));
+    }
+  }
   addPartInteraction(group, rail);
   railLayer.appendChild(group);
 }
@@ -2473,6 +2542,7 @@ function updateRailSwitchVisual(rail) {
     marker.setAttribute("points", geometry.points);
     marker.classList.toggle("disabled", !geometry.isNormalMode);
   });
+  updateEventMarker(rail, group);
 }
 
 function updateSimulationSwitches() {
@@ -2602,6 +2672,7 @@ function updateRailElement(rail) {
     circle.setAttribute("cx", point.x);
     circle.setAttribute("cy", point.y);
   });
+  updateEventMarker(rail, group);
   updateRailSwitchVisual(rail);
 }
 

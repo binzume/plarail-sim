@@ -147,12 +147,13 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 /* SVG rail styling */
 .rail-instance { cursor: grab; }
 .rail-instance:active { cursor: grabbing; }
-.rail-height-shadow { fill: none; stroke: #61718d; stroke-width: .58; stroke-linecap: butt; stroke-linejoin: round; opacity: .2; pointer-events: none; }
+.rail-height-shadow { fill: none; stroke: #61718d; stroke-width: .58; stroke-linecap: butt; stroke-linejoin: round; opacity: .25; pointer-events: none; }
 .rail-shadow { fill: none; stroke: #1d3f78; stroke-width: 1; stroke-linecap: butt; stroke-linejoin: round; opacity: .16; pointer-events: none; }
 .rail-line { fill: none; stroke: #3f6fba; stroke-width: .85; stroke-linecap: butt; stroke-linejoin: round; pointer-events: none; }
 .rail-line.auto-switch { stroke: #d34b4b; }
 .rail-line.fixed { stroke: #3b9b68; }
 .rail-inner { fill: none; stroke: #b9cdf0; stroke-width: .24; stroke-linecap: butt; stroke-linejoin: round; pointer-events: none; }
+.event-marker { fill: none; stroke: #e53935; stroke-width: .18; pointer-events: none; }
 .train-body { stroke: #7f3d35; stroke-width: .12; pointer-events: none; }
 .train-hit { fill: transparent; stroke: transparent; stroke-width: 1.2; }
 .text-box { fill: rgba(255, 255, 255, .55); stroke: #cbd5e1; stroke-width: .08; stroke-dasharray: .22 .16; cursor: grab; }
