@@ -1435,60 +1435,34 @@ function pathsForRail(rail) {
     .sort((a, b) => Number(a.active) - Number(b.active));
 }
 
-function cubicPoint(segment, t) {
-  const inverse = 1 - t;
-  return [
-    inverse ** 3 * segment.start[0] + 3 * inverse ** 2 * t * segment.control1[0] +
-      3 * inverse * t ** 2 * segment.control2[0] + t ** 3 * segment.endpoint[0],
-    inverse ** 3 * segment.start[1] + 3 * inverse ** 2 * t * segment.control1[1] +
-      3 * inverse * t ** 2 * segment.control2[1] + t ** 3 * segment.endpoint[1],
-    inverse ** 3 * segment.start[2] + 3 * inverse ** 2 * t * segment.control1[2] +
-      3 * inverse * t ** 2 * segment.control2[2] + t ** 3 * segment.endpoint[2]
-  ];
-}
-
 function eventMarkerPoint(rail) {
-  const part = PARTS[rail.part];
-  const paths = pathsForRail(rail);
-  const path = paths.find(item => item.active) || paths[0];
-  const segments = path && localPathSegments(part.paths[path.index], part);
-  if (!segments?.length) return null;
-
-  const samples = segments.flatMap((segment, segmentIndex) => {
-    const points = Array.from({ length: 25 }, (_, index) =>
-      cubicPoint(segment, index / 24)
-    );
-    return segmentIndex === 0 ? points : points.slice(1);
-  });
-  const lengths = samples.slice(1).map((point, index) =>
-    Math.hypot(point[0] - samples[index][0], point[1] - samples[index][1])
-  );
-  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
-  if (!totalLength) return projectWorldPoint(transformPoint(samples[0], rail));
-
-  let distance = totalLength / 2;
-  for (let index = 0; index < lengths.length; index += 1) {
-    if (distance <= lengths[index]) {
-      const start = samples[index];
-      const end = samples[index + 1];
-      const ratio = lengths[index] ? distance / lengths[index] : 0;
-      const midpoint = start.map((value, coordinateIndex) =>
-        value + (end[coordinateIndex] - value) * ratio
-      );
-      return projectWorldPoint(transformPoint(midpoint, rail));
-    }
-    distance -= lengths[index];
-  }
-  return projectWorldPoint(transformPoint(samples.at(-1), rail));
+  const connectors = PARTS[rail.part]?.connectors || [];
+  if (!connectors.length) return null;
+  const center = connectors.reduce((sum, _, index) => {
+    const point = projectWorldPoint(worldConnector(rail, index));
+    return {
+      x: sum.x + point.x / connectors.length,
+      y: sum.y + point.y / connectors.length
+    };
+  }, { x: 0, y: 0 });
+  return center;
 }
 
 function updateEventMarker(rail, group = railLayerElement(rail.id)) {
   const marker = group?.querySelector(".event-marker");
-  if (!marker) return;
+  const label = group?.querySelector(".event-label");
+  if (!marker && !label) return;
   const point = eventMarkerPoint(rail);
   if (!point) return;
-  marker.setAttribute("cx", point.x);
-  marker.setAttribute("cy", point.y);
+  if (marker) {
+    marker.setAttribute("cx", point.x);
+    marker.setAttribute("cy", point.y);
+  }
+  if (label) {
+    label.setAttribute("x", point.x);
+    label.setAttribute("y", point.y - EVENT_MARKER_RADIUS - 0.45);
+    label.textContent = eventNameForRail(rail).trim();
+  }
 }
 
 function localPathPoints(pathDefinition, part = null) {
@@ -2213,7 +2187,8 @@ function renderRail(rail) {
     group.appendChild(circle);
   });
   switchDefinitions(rail.part).forEach(definition => renderSwitchMarker(group, rail, definition));
-  if (eventNameForRail(rail).trim()) {
+  const eventName = eventNameForRail(rail).trim();
+  if (eventName) {
     const point = eventMarkerPoint(rail);
     if (point) {
       group.appendChild(createSvg("circle", {
@@ -2221,8 +2196,17 @@ function renderRail(rail) {
         cx: point.x,
         cy: point.y,
         r: EVENT_MARKER_RADIUS,
-        "aria-label": eventNameForRail(rail).trim()
+        "aria-label": eventName
       }));
+      const label = createSvg("text", {
+        class: "event-label",
+        x: point.x,
+        y: point.y - EVENT_MARKER_RADIUS - 0.45,
+        "text-anchor": "middle",
+        "font-size": 1.1
+      });
+      label.textContent = eventName;
+      group.appendChild(label);
     }
   }
   addPartInteraction(group, rail);

@@ -221,9 +221,21 @@
     let revision = 0;
     let trainStates = [];
     let initialSwitches = [];
+    const pathRecordsCache = new Map();
+    let railLookup = new Map();
+    let connectionLookup = new Map();
+
+    function rebuildLookups() {
+      railLookup = new Map(layout.rails.map(rail => [rail.id, rail]));
+      connectionLookup = new Map();
+      layout.connections.forEach(connection => {
+        connectionLookup.set(connectorKey(connection.from), connection.to);
+        connectionLookup.set(connectorKey(connection.to), connection.from);
+      });
+    }
 
     function railById(id) {
-      return layout.rails.find(rail => rail.id === id);
+      return railLookup.get(id) || null;
     }
 
     function connectorWorld(rail, index) {
@@ -236,13 +248,29 @@
     }
 
     function pathRecords(rail) {
+      const position = rail.position || [];
+      const cacheKey = [
+        rail.part,
+        position[0],
+        position[1],
+        position[2],
+        rail.rotation,
+        Boolean(rail.flip)
+      ].join("|");
+      const cached = pathRecordsCache.get(rail.id);
+      if (cached && cached.rail === rail && cached.key === cacheKey) {
+        return cached.records;
+      }
+
       const part = parts[rail.part];
-      return (part.paths || []).map((definition, index) => ({
+      const records = (part.paths || []).map((definition, index) => ({
         index,
         from: definition.from,
         to: definition.to,
         ...samplePath(definition, rail, part)
       }));
+      pathRecordsCache.set(rail.id, { rail, key: cacheKey, records });
+      return records;
     }
 
     function averagePathHeight(path) {
@@ -312,12 +340,7 @@
     }
 
     function connectionMap() {
-      const map = new Map();
-      layout.connections.forEach(connection => {
-        map.set(connectorKey(connection.from), connection.to);
-        map.set(connectorKey(connection.to), connection.from);
-      });
-      return map;
+      return connectionLookup;
     }
 
     function nearestPoint(path, target) {
@@ -421,7 +444,7 @@
       state.rotation = normalizeAngle(Math.atan2(tangent.y, tangent.x) * 180 / Math.PI);
     }
 
-    function transitionToNextPath(state, events, eventTime) {
+    function transitionToNextPath(state, eventTime) {
       const rail = railById(state.railId);
       if (!rail) {
         state.status = "stopped";
@@ -480,7 +503,7 @@
       state.distanceAlong = state.direction > 0 ? 0 : nextPath.length;
       state.pathDepth = averagePathHeight(nextPath);
       if (eventName) {
-        events.push({
+        options.onEvent?.({
           type: "rail-enter",
           time: eventTime,
           trainId: state.id,
@@ -492,7 +515,7 @@
       return true;
     }
 
-    function advanceTrain(state, amount, events, stepStartTime, speedPerSecond) {
+    function advanceTrain(state, amount, stepStartTime, speedPerSecond) {
       let remaining = amount;
       let traveled = 0;
       while (state.status === "running" && remaining > EPSILON) {
@@ -509,7 +532,6 @@
           state.distanceAlong = state.direction > 0 ? path.length : 0;
           if (!transitionToNextPath(
             state,
-            events,
             stepStartTime + traveled / speedPerSecond
           )) break;
           updateTrainVisual(state);
@@ -529,7 +551,6 @@
         traveled += traveledOnPath;
         if (!transitionToNextPath(
           state,
-          events,
           stepStartTime + traveled / speedPerSecond
         )) break;
         updateTrainVisual(state);
@@ -574,11 +595,10 @@
       return true;
     }
 
-    function frame(events = []) {
+    function frame() {
       return {
         elapsed: elapsedTime,
         revision,
-        events,
         trains: Object.fromEntries(trainStates.map(state => [state.id, {
           position: [...state.position],
           rotation: state.rotation,
@@ -595,7 +615,6 @@
       let remaining = Number.isFinite(requestedElapsed)
         ? Math.max(0, requestedElapsed)
         : 0;
-      const events = [];
       stopWhenAllTrainsStopped();
       while (remaining > EPSILON) {
         if (!playing) break;
@@ -607,7 +626,6 @@
           advanceTrain(
             state,
             speedPerSecond * elapsed,
-            events,
             stepStartTime,
             speedPerSecond
           );
@@ -616,13 +634,13 @@
         remaining -= elapsed;
         stopWhenAllTrainsStopped();
       }
-      events.sort((first, second) => first.time - second.time);
-      return frame(events);
+      return frame();
     }
 
     function start() {
       if (playing) return false;
       elapsedTime = 0;
+      rebuildLookups();
       const currentLayout = layout;
       initialSwitches = currentLayout.rails
         .filter(rail => (parts[rail.part]?.switches || []).length)

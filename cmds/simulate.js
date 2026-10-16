@@ -111,13 +111,16 @@ function runSimulation(layout, speed, time) {
           railId: train.railId
         }))
       }));
+    },
+    onEvent: event => {
+      console.log(JSON.stringify(event));
     }
   });
   if (!simulator.start()) throw new Error("Failed to start simulation");
 
   let finished = false;
   let timer = null;
-  let lastFrame = { elapsed: 0, events: [] };
+  let lastFrame = { elapsed: 0 };
 
   const finish = reason => {
     if (finished) return;
@@ -138,9 +141,6 @@ function runSimulation(layout, speed, time) {
     const wallTickTime = Math.max(TICK_TIME, MIN_SIMULATION_DELTA_TIME / speed);
     const deltaTime = Math.min(wallTickTime * speed, remainingTime);
     lastFrame = simulator.update(deltaTime) || lastFrame;
-    for (const event of lastFrame.events || []) {
-      console.log(JSON.stringify(event));
-    }
 
     if (!simulator.isPlaying()) {
       finish("all trains stopped");

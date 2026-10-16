@@ -154,6 +154,7 @@ h2 { margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .rail-line.fixed { stroke: #3b9b68; }
 .rail-inner { fill: none; stroke: #b9cdf0; stroke-width: .24; stroke-linecap: butt; stroke-linejoin: round; pointer-events: none; }
 .event-marker { fill: none; stroke: #e53935; stroke-width: .18; pointer-events: none; }
+.event-label { fill: #e53935; font-weight: 700; pointer-events: none; user-select: none; }
 .train-body { stroke: #7f3d35; stroke-width: .12; pointer-events: none; }
 .train-hit { fill: transparent; stroke: transparent; stroke-width: 1.2; }
 .text-box { fill: rgba(255, 255, 255, .55); stroke: #cbd5e1; stroke-width: .08; stroke-dasharray: .22 .16; cursor: grab; }
